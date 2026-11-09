@@ -4,7 +4,7 @@
  * The LEVEL is set by WALLET HOLD: how much LABUBU the user holds in their
  * linked TON wallet (on-chain balance). Each level has its own mining rate
  * (see config.miningLevels, copied from Rifty Mining's level table):
- * Lv1 (hold 0) = 25/h = 600/day ... Lv20 (hold 75,411) = 334.4/h = 8,025/day.
+ * Lv1 (hold 0) = 25/h = 600/day ... Lv100 (hold 2,848,238) = 3,704.8/h = 88,916/day.
  *
  * A farming session pays its level's perHour rate x 8 hours. The level is
  * read from the chain when a session starts (and shown in the Mini App from
