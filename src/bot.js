@@ -75,7 +75,7 @@ function createBot() {
         `Minimum: ${config.saleMinGram} GRAM\n\n` +
         `1. Send GRAM to:\n${config.treasuryAddress}\n\n` +
         `2. Put this exact comment/memo on the transfer:\n${memo}\n\n` +
-        `3. The bot credits your LABUBU automatically (usually within a few minutes).\n` +
+        `3. The owner sends your LABUBU manually to your linked wallet after the GRAM arrives (usually within a few hours). Make sure your TON wallet is linked in the Mini App (Wallet tab) so the owner knows where to send it.\n` +
         `Send GRAM only from a wallet where you control the comment field.`
     );
   });

@@ -31,9 +31,10 @@ function main() {
     console.log(`[server] health: http://localhost:${config.port}/api/health`);
   });
 
+  let bot = null;
   if (config.runBot) {
     const { createBot } = require('./bot');
-    const bot = createBot();
+    bot = createBot();
     bot.start();
     console.log('[bot] polling started.');
     if (!config.miniAppUrl) {
@@ -49,7 +50,7 @@ function main() {
   });
   console.log('[hold] daily tick scheduled at 00:00 UTC.');
 
-  startBuyPoller();
+  startBuyPoller(bot);
 
   const shutdown = () => {
     console.log('\nShutting down...');
