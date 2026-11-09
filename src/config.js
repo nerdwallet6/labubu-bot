@@ -156,6 +156,17 @@ const config = {
 
   // --- Tasks (seeded defaults; rewards in LABUBU) ---
   dailyCheckinReward: 50,
+  // Referrer bonus: when an invited friend's buy reaches this many LABUBU,
+  // the referrer earns friendBuyBonus LABUBU (credited automatically).
+  friendBuyMinLabubu: 2500,
+  friendBuyBonus: 1000,
+  // Official Telegram channel for the join-channel mission.
+  channelUsername: (process.env.CHANNEL_USERNAME || 'LabubuVerse_Mining').replace(/^@/, ''),
+
+  // --- Listing (announced) ---
+  listingDate: '13 November 2026',
+  listingVenue: 'STON.fi',
+  listingUrl: 'https://ston.fi',
 
   // --- Withdraw ---
   withdrawMin: 10_000, // minimum withdrawal, LABUBU

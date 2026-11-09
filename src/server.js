@@ -11,6 +11,7 @@ const { db, runTransaction, getUser, upsertUser, addBalance, toLabubu } = requir
 const { validateInitData } = require('./auth');
 const { levelForHold, nextLevel, tierForLevel, miningLevels } = require('./hold');
 const { memoFor } = require('./buy');
+const { checkChannelMember: channelCheck } = require('./channel');
 const { getJettonBalanceNano, isTonAddress } = require('./ton');
 
 const NANO = config.NANO;
@@ -177,6 +178,14 @@ function createServer() {
     });
   });
 
+  // Check whether a Telegram user is a member of the official channel.
+  // Returns true (member/admin/creator), false (left/kicked/not a member),
+  // or null when the check itself failed (e.g. the bot is not an admin of
+  // the channel, so Telegram refuses to answer).
+  async function checkChannelMember(telegramId) {
+    return channelCheck(config.botToken, config.channelUsername, telegramId);
+  }
+
   // --- tasks ---
   app.get('/api/tasks', requireUser, (req, res) => {
     const tasks = db.prepare('SELECT * FROM tasks WHERE active = 1').all();
@@ -196,6 +205,12 @@ function createServer() {
     const refCount = db
       .prepare('SELECT COUNT(*) AS c FROM referrals WHERE referrer_id = ?')
       .get(req.tgUser.id).c;
+    // friend_buy task: ongoing auto bonus — count qualifying friend buys.
+    const fb = db
+      .prepare(
+        'SELECT COUNT(*) AS c, COALESCE(SUM(bonus_nano),0) AS e FROM referral_buy_bonus WHERE referrer_id = ?'
+      )
+      .get(req.tgUser.id);
     res.json({
       ok: true,
       tasks: tasks.map((t) => ({
@@ -207,12 +222,13 @@ function createServer() {
         url: t.url,
         target: t.target,
         done: done.has(t.id),
-        progress: t.kind === 'referral' ? refCount : undefined,
+        progress: t.kind === 'referral' ? refCount : t.kind === 'friend_buy' ? fb.c : undefined,
+        earned: t.kind === 'friend_buy' ? toLabubu(fb.e) : undefined,
       })),
     });
   });
 
-  app.post('/api/tasks/:id/claim', requireUser, (req, res) => {
+  app.post('/api/tasks/:id/claim', requireUser, async (req, res) => {
     const task = db.prepare('SELECT * FROM tasks WHERE id = ? AND active = 1').get(req.params.id);
     if (!task) return res.status(404).json({ ok: false, error: 'task not found' });
     const done = db
@@ -220,6 +236,28 @@ function createServer() {
       .get(req.tgUser.id, task.id);
     if (done) return res.status(400).json({ ok: false, error: 'task already claimed' });
 
+    if (task.kind === 'friend_buy') {
+      // Ongoing auto bonus — credited by the buy poller, never claimed here.
+      return res
+        .status(400)
+        .json({ ok: false, error: 'this bonus is credited automatically when your friend buys' });
+    }
+    if (task.kind === 'channel') {
+      // Verify the user actually joined the official Telegram channel.
+      // NOTE: the bot must be an admin of the channel, otherwise Telegram
+      // returns 403 and the check cannot run.
+      const member = await checkChannelMember(req.tgUser.id);
+      if (member === null) {
+        return res.status(502).json({
+          ok: false,
+          error:
+            'could not verify channel membership — make sure the bot is an admin of the channel',
+        });
+      }
+      if (!member) {
+        return res.status(400).json({ ok: false, error: 'join the channel first' });
+      }
+    }
     if (task.kind === 'referral') {
       const refCount = db
         .prepare('SELECT COUNT(*) AS c FROM referrals WHERE referrer_id = ?')

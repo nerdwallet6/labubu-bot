@@ -18,7 +18,7 @@
  * If TREASURY_ADDRESS is not configured, the poller stays idle and
  * /api/buy/info reports configured:false — it never fails the server.
  */
-const { db, runTransaction, getUser } = require('./db');
+const { db, runTransaction, getUser, addBalance } = require('./db');
 const config = require('./config');
 const { getAccountTransactions, extractComment } = require('./ton');
 
@@ -59,6 +59,45 @@ async function notifyAdmin(bot, { userId, grams, labubu, wallet, txHash }) {
       console.log(`[buy] could not notify admin ${id}: ${e.message}`);
     }
   }
+}
+
+// Referrer bonus: when an invited friend's paid buy reaches
+// config.friendBuyMinLabubu LABUBU, the referrer earns
+// config.friendBuyBonus LABUBU automatically (once per order — the
+// referral_buy_bonus row has a UNIQUE order_id, so a re-run is a no-op).
+// Returns the bonus credited (0 when not applicable).
+function creditFriendBuyBonus(bot, order, buyer, labubu) {
+  const referrerId = buyer && buyer.referrer_id;
+  if (!referrerId) return 0;
+  if (labubu < config.friendBuyMinLabubu) return 0;
+  const bonusNano = config.friendBuyBonus * NANO;
+  const inserted = runTransaction(() => {
+    const r = db
+      .prepare(
+        `INSERT INTO referral_buy_bonus (referrer_id, referred_id, order_id, bonus_nano, created_at)
+         VALUES (?, ?, ?, ?, ?) ON CONFLICT(order_id) DO NOTHING`
+      )
+      .run(referrerId, buyer.telegram_id, order.id, bonusNano, Date.now());
+    if (r.changes === 0) return false;
+    addBalance(referrerId, bonusNano);
+    db.prepare(
+      'UPDATE referrals SET earned_nano = earned_nano + ? WHERE referrer_id = ? AND referred_id = ?'
+    ).run(bonusNano, referrerId, buyer.telegram_id);
+    return true;
+  });
+  if (!inserted) return 0;
+  console.log(
+    `[buy] referrer ${referrerId} earned +${config.friendBuyBonus} LABUBU (friend ${buyer.telegram_id} bought ${labubu.toLocaleString()} LABUBU, order ${order.id}).`
+  );
+  if (bot) {
+    bot.api
+      .sendMessage(
+        referrerId,
+        `🎉 Your friend just bought ${labubu.toLocaleString()} LABUBU — you earned +${config.friendBuyBonus.toLocaleString()} LABUBU!`
+      )
+      .catch((e) => console.log(`[buy] could not notify referrer ${referrerId}: ${e.message}`));
+  }
+  return config.friendBuyBonus;
 }
 
 async function pollOnce(bot = null) {
@@ -119,6 +158,8 @@ async function pollOnce(bot = null) {
       ).run(valueNano, labubuNano, hash, Date.now(), order.id);
     });
     matched++;
+    // Referrer bonus (automatic): friend bought >= friendBuyMinLabubu.
+    creditFriendBuyBonus(bot, order, buyer, labubu);
     console.log(
       `[buy] ${grams} GRAM received from user ${userId} (tx ${hash}) — ${labubu.toLocaleString()} LABUBU owed, owner sends manually.`
     );
@@ -146,4 +187,4 @@ function startBuyPoller(bot = null, intervalMs = 60_000) {
   return timer;
 }
 
-module.exports = { memoFor, pollOnce, startBuyPoller };
+module.exports = { memoFor, pollOnce, startBuyPoller, creditFriendBuyBonus };

@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   title       TEXT NOT NULL,
   description TEXT NOT NULL,
   reward_nano INTEGER NOT NULL,
-  kind        TEXT NOT NULL,   -- 'checkin' | 'link' | 'referral' | 'hold'
+  kind        TEXT NOT NULL,   -- 'checkin' | 'referral' | 'hold' | 'friend_buy' | 'channel'
   url         TEXT,
   target      INTEGER,         -- e.g. referrals needed, or min hold
   active      INTEGER NOT NULL DEFAULT 1
@@ -89,6 +89,15 @@ CREATE TABLE IF NOT EXISTS buy_orders (
 CREATE TABLE IF NOT EXISTS processed_txs (
   tx_hash     TEXT PRIMARY KEY,
   processed_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS referral_buy_bonus (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  referrer_id   INTEGER NOT NULL,
+  referred_id   INTEGER NOT NULL,
+  order_id      INTEGER NOT NULL UNIQUE,
+  bonus_nano    INTEGER NOT NULL,
+  created_at    INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS hold_snapshots (
@@ -132,18 +141,37 @@ const seedTasks = [
     target: null,
   },
   {
-    id: 'invite3',
-    title: 'Invite 3 friends',
-    description: 'Invite 3 friends with your referral link.',
+    id: 'invite1',
+    title: 'Invite 1 friend',
+    description: 'Invite 1 friend with your referral link.',
     reward_nano: 500 * config.NANO,
     kind: 'referral',
     url: null,
-    target: 3,
+    target: 1,
+  },
+  {
+    id: 'friend_buy',
+    title: 'Friend buys LABUBU',
+    description:
+      'Every friend you invite who buys at least 2,500 LABUBU earns you +1,000 LABUBU. Bonus is credited automatically.',
+    reward_nano: config.friendBuyBonus * config.NANO,
+    kind: 'friend_buy',
+    url: null,
+    target: config.friendBuyMinLabubu,
+  },
+  {
+    id: 'join_channel',
+    title: 'Join the Telegram channel',
+    description: 'Join our official Telegram channel to claim this bonus.',
+    reward_nano: 500 * config.NANO,
+    kind: 'channel',
+    url: 'https://t.me/LabubuVerse_Mining',
+    target: null,
   },
   {
     id: 'hold1m',
-    title: 'Hold LABUBU di wallet',
-    description: 'Hubungkan wallet TON kamu dan hold LABUBU (jumlah berapa pun) untuk klaim bonus ini.',
+    title: 'Hold LABUBU in your wallet',
+    description: 'Link your TON wallet and hold any amount of LABUBU to claim this bonus.',
     reward_nano: 1000 * config.NANO,
     kind: 'hold',
     url: null,
@@ -162,6 +190,8 @@ const insertTask = db.prepare(`
     target = excluded.target
 `);
 for (const t of seedTasks) insertTask.run(t);
+// Old invite task (3 friends) is replaced by invite1 (1 friend).
+db.prepare("UPDATE tasks SET active = 0 WHERE id = 'invite3'").run();
 
 // --- Helpers ---
 function getUser(telegramId) {

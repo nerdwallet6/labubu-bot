@@ -42,9 +42,10 @@ function createBot() {
       `🌟 Welcome to LABUBU Verse Mining!\n\n` +
         `Enter the Verse and build your cosmic mining adventure on Telegram.\n\n` +
         `⛏️ Collect LABUBU in the app\n` +
-        `💎 Hold LABUBU and earn a share of 1,000,000 LABUBU/day\n` +
+        `💎 Hold LABUBU to raise your level and mining rate (100 levels, 5 tiers)\n` +
         `🎁 Complete missions and earn rewards\n` +
         `👥 Invite friends and grow your crew\n\n` +
+        `🚀 Listing: 13 November 2026 on STON.fi\n\n` +
         `🪙 Your balance: ${toLabubu(user.balance_nano).toLocaleString()} LABUBU\n\n` +
         `👇 Start your journey with the button below.\n\n` +
         `Your referral link:\n${refLink}`,
@@ -88,7 +89,9 @@ function createBot() {
         `/buy — how to buy LABUBU with GRAM\n` +
         `/help — this message\n\n` +
         `Mining: start an 8h farming session in the Mini App. Your rate depends on your LEVEL — set by how much LABUBU you hold in your TON wallet. 5 tiers: BRONZE Lv1-20, SILVER Lv21-40, GOLD Lv41-60, PLATINUM Lv61-80, ULTIMATE Lv81-100. Lv1 (hold 0) = 25/h, Lv5 (hold 2,447) = 54.9/h, Lv20 (hold 75,411) = 334.4/h, Lv50 (hold 606,192) = 1,306.4/h, Lv100 (hold 2,848,238) = 3,704.8/h. Claim when the session ends.\n` +
+        `Missions: daily check-in (+50), invite 1 friend (+500), your friend's buy of 2,500+ LABUBU earns you +1,000 (automatic), join our Telegram channel (+500).\n` +
         `Referrals: 10% of what your friends farm goes to you.\n` +
+        `Listing: 13 November 2026 on STON.fi.\n` +
         `Withdraw: request in the Mini App; the admin approves manually in v1.`
     );
   });

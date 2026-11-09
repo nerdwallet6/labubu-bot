@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -65,6 +65,10 @@
   .bottomnav button { flex:1; background:none; border:none; color:var(--muted); font-size:11px; font-weight:600; cursor:pointer; padding:4px 0; }
   .bottomnav button .ic { font-size:20px; display:block; margin-bottom:2px; }
   .bottomnav button.active { color:var(--deep); }
+  .announce { background:linear-gradient(135deg,#fff3c4,#ffe08a); border:1px solid #e8b93e; border-radius:14px; padding:12px 14px; margin-bottom:12px; text-align:center; }
+  .announce b { color:#7a5b00; font-size:15px; display:block; margin-bottom:2px; }
+  .announce span { color:#6b5a1e; font-size:13px; }
+  .announce .btn { margin-top:8px; }
   .section { display:none; }
   .section.active { display:block; }
   .timer { font-size:20px; font-weight:800; margin:6px 0; letter-spacing:1px; }
@@ -91,22 +95,27 @@
 
 <!-- HOME -->
 <div class="section active" id="tab-home">
+  <div class="announce">
+    <b>🚀 LISTING 13 NOVEMBER 2026</b>
+    <span>LABUBU lists on STON.fi — 13 November 2026</span>
+    <button class="btn" onclick="tg.openLink('https://ston.fi')">Trade on STON.fi ↗</button>
+  </div>
   <div class="card">
     <div class="muted">App Balance</div>
     <div class="big"><span id="balance">—</span> <small>LABUBU</small></div>
-    <div class="muted" id="walletLine">Wallet belum terhubung</div>
+    <div class="muted" id="walletLine">Wallet not linked</div>
   </div>
 
   <div class="farmcard">
     <div class="bg"></div>
     <div class="inner">
       <h2>⛏️ Active Farming <span class="run" id="farmRun" style="display:none">Running</span></h2>
-      <div id="farmState" class="muted">Memuat…</div>
+      <div id="farmState" class="muted">Loading…</div>
       <div class="accrued" id="farmAccrued" style="display:none">+0 <small>LABUBU</small></div>
       <div class="timer" id="farmTimer"></div>
-      <button class="btn" id="farmBtn" onclick="farmStart()">⚡ Mulai Farming (8 jam)</button>
-      <button class="btn" id="claimBtn" onclick="farmClaim()" style="display:none">⚡ Klaim Hasil Farming</button>
-      <p class="muted" style="margin-top:8px">Rate mining tergantung level kamu — level ditentukan dari jumlah LABUBU yang kamu hold di wallet. 5 tier: 🥉 BRONZE Lv.1–20, 🥈 SILVER Lv.21–40, 🥇 GOLD Lv.41–60, 💎 PLATINUM Lv.61–80, 👑 ULTIMATE Lv.81–100. Lv.1 (hold 0) = 25/jam, Lv.100 (hold 2.848.238) = 3.704,8/jam. Sesi 8 jam. Referrer kamu dapat 10% dari hasil farmingmu.</p>
+      <button class="btn" id="farmBtn" onclick="farmStart()">⚡ Start Farming (8h)</button>
+      <button class="btn" id="claimBtn" onclick="farmClaim()" style="display:none">⚡ Claim Farming Rewards</button>
+      <p class="muted" style="margin-top:8px">Your mining rate depends on your level — your level is set by how much LABUBU you hold in your wallet. 5 tiers: 🥉 BRONZE Lv.1–20, 🥈 SILVER Lv.21–40, 🥇 GOLD Lv.41–60, 💎 PLATINUM Lv.61–80, 👑 ULTIMATE Lv.81–100. Lv.1 (hold 0) = 25/h, Lv.100 (hold 2,848,238) = 3,704.8/h. 8h sessions. Your referrer earns 10% of your farmed amount.</p>
     </div>
   </div>
 
@@ -123,14 +132,14 @@
       <div style="flex:1">
         <div style="display:flex;justify-content:space-between"><b id="levelTitle">Next Level: 2</b><span class="muted" id="levelCount">0 / 1.000 LABUBU</span></div>
         <div class="bar"><i id="levelBar" style="width:0%"></i></div>
-        <div class="muted" id="levelHint">Kumpulkan 1.000 LABUBU untuk naik ke Level 2</div>
+        <div class="muted" id="levelHint">Collect 1,000 LABUBU to reach Level 2</div>
       </div>
     </div>
   </div>
 
   <div class="card" onclick="openTab('tasks')" style="cursor:pointer">
     <div class="row" style="border-bottom:none">
-      <div><b>🎯 Mission Center</b><br><span class="muted">Selesaikan misi dan undang teman untuk dapat LABUBU.</span></div>
+      <div><b>🎯 Mission Center</b><br><span class="muted">Complete missions and invite friends to earn LABUBU.</span></div>
       <span class="count-badge" id="missionCount">–</span>
     </div>
   </div>
@@ -139,12 +148,12 @@
     <div class="fcard" onclick="openTab('hold')">
       <img src="labubu-brown.jpg" alt="Hold Station">
       <b>💎 Hold Station</b>
-      <p>Hold LABUBU &amp; dapat bagian pool harian.</p>
+      <p>Hold LABUBU to raise your level and mining rate.</p>
     </div>
     <div class="fcard" onclick="openTab('buy')">
       <img src="labubu-hero.jpg" alt="Buy LABUBU">
       <b>🛒 Buy LABUBU</b>
-      <p>1 GRAM = 2.500 LABUBU. Min 0,1 GRAM.</p>
+      <p>1 GRAM = 2,500 LABUBU. Min 0.1 GRAM.</p>
     </div>
   </div>
 </div>
@@ -153,13 +162,13 @@
 <div class="section" id="tab-hold">
   <div class="card">
     <h2>💎 Hold-to-Earn</h2>
-    <div id="holdInfo" class="muted">Memuat…</div>
-    <input id="walletInput" placeholder="Alamat TON kamu (EQ... / UQ...)" />
-    <button class="btn secondary" onclick="linkWallet()">Hubungkan Wallet</button>
-    <p class="muted" style="margin-top:8px">Level kamu ditentukan dari jumlah LABUBU yang kamu hold di wallet. Makin banyak hold, makin tinggi rate mining-mu. Contoh: hold 2.500 LABUBU = Level 5 (1.317/hari), hold 4.000 = Level 6 (1.602/hari).</p>
+    <div id="holdInfo" class="muted">Loading…</div>
+    <input id="walletInput" placeholder="Your TON address (EQ... / UQ...)" />
+    <button class="btn secondary" onclick="linkWallet()">Link Wallet</button>
+    <p class="muted" style="margin-top:8px">Your level is set by how much LABUBU you hold in your wallet. The more you hold, the higher your mining rate. Example: hold 2,500 LABUBU = Level 5 (1,317/day), hold 4,000 = Level 6 (1,602/day).</p>
   </div>
   <div class="card">
-    <h2>📊 Tabel Level</h2>
+    <h2>📊 Level Table</h2>
     <div id="levelTable"></div>
   </div>
 </div>
@@ -167,15 +176,15 @@
 <!-- BUY -->
 <div class="section" id="tab-buy">
   <div class="card">
-    <h2>🛒 Beli LABUBU</h2>
-    <div id="buyInfo" class="muted">Memuat…</div>
+    <h2>🛒 Buy LABUBU</h2>
+    <div id="buyInfo" class="muted">Loading…</div>
     <div id="buyDetail" style="display:none">
-      <p class="muted">Kirim GRAM ke alamat ini:</p>
+      <p class="muted">Send GRAM to this address:</p>
       <div class="mono" id="buyTreasury"></div>
-      <p class="muted" style="margin-top:8px">Memo (wajib diisi di kolom komentar transfer):</p>
+      <p class="muted" style="margin-top:8px">Memo (required — put it in the transfer comment):</p>
       <div class="mono" id="buyMemo"></div>
-      <button class="btn pink" onclick="buyPrepare()">Saya Sudah Siap — Buat Pesanan Beli</button>
-      <p class="muted" style="margin-top:8px">Setelah transfer, owner akan mengirim LABUBU secara manual ke wallet kamu yang terhubung (pastikan wallet sudah di-link di tab Wallet). Minimal 0,1 GRAM.</p>
+      <button class="btn pink" onclick="buyPrepare()">I'm Ready — Create Buy Order</button>
+      <p class="muted" style="margin-top:8px">After the transfer, the owner will send LABUBU manually to your linked wallet (make sure your wallet is linked in the Wallet tab). Minimum 0.1 GRAM.</p>
     </div>
   </div>
 </div>
@@ -184,7 +193,7 @@
 <div class="section" id="tab-tasks">
   <div class="card">
     <h2>🎯 Mission Center</h2>
-    <div id="taskList" class="muted">Memuat…</div>
+    <div id="taskList" class="muted">Loading…</div>
   </div>
 </div>
 
@@ -192,10 +201,10 @@
 <div class="section" id="tab-refs">
   <div class="card">
     <h2>👥 Referral</h2>
-    <div id="refInfo" class="muted">Memuat…</div>
+    <div id="refInfo" class="muted">Loading…</div>
     <div class="mono" id="refLink"></div>
-    <button class="btn secondary" onclick="copyRef()">Salin Link Referral</button>
-    <p class="muted" style="margin-top:8px">Kamu dapat 10% dari LABUBU yang di-farming teman yang kamu undang.</p>
+    <button class="btn secondary" onclick="copyRef()">Copy Referral Link</button>
+    <p class="muted" style="margin-top:8px">You earn 10% of the LABUBU farmed by friends you invite.</p>
   </div>
 </div>
 
@@ -203,10 +212,10 @@
 <div class="section" id="tab-wd">
   <div class="card">
     <h2>💸 Withdraw</h2>
-    <input id="wdAddress" placeholder="Alamat TON tujuan (EQ... / UQ...)" />
-    <input id="wdAmount" type="number" placeholder="Jumlah LABUBU (min 10.000)" />
-    <button class="btn pink" onclick="withdraw()">Ajukan Withdraw</button>
-    <p class="muted" style="margin-top:8px">Minimal withdraw 10.000 LABUBU. Kamu harus menyisakan 25% dari jumlah withdraw di saldo (contoh: withdraw 10.000 butuh saldo 12.500). Permintaan masuk antrean dan disetujui admin secara manual.</p>
+    <input id="wdAddress" placeholder="Destination TON address (EQ... / UQ...)" />
+    <input id="wdAmount" type="number" placeholder="LABUBU amount (min 10,000)" />
+    <button class="btn pink" onclick="withdraw()">Request Withdrawal</button>
+    <p class="muted" style="margin-top:8px">Minimum withdrawal 10,000 LABUBU. You must keep 25% of the withdrawal amount in your balance (example: withdrawing 10,000 needs a 12,500 balance). Requests are queued and approved manually by an admin.</p>
     <div id="wdList" style="margin-top:10px"></div>
   </div>
 </div>
@@ -235,7 +244,7 @@ async function api(path, opts){
   if(!data.ok) throw new Error(data.error || 'request failed');
   return data;
 }
-const fmt = n => Number(n||0).toLocaleString('id-ID');
+const fmt = n => Number(n||0).toLocaleString('en-US');
 let farmEndsAt = 0, farmTimer = null, myBalance = 0, myHold = 0, farmRate = 25;
 
 // Rifty-style levels: level is set by WALLET HOLD (on-chain LABUBU).
@@ -375,12 +384,12 @@ function renderLevel(){
     document.getElementById('levelTitle').textContent = 'Next Level: ' + next.lvl + (nextTier.name !== tier.name ? ' · ' + nextTier.emoji + ' ' + nextTier.name : '');
     document.getElementById('levelCount').textContent = fmt(myHold) + ' / ' + fmt(next.hold) + ' LABUBU';
     document.getElementById('levelBar').style.width = pct + '%';
-    document.getElementById('levelHint').textContent = 'Hold ' + fmt(next.hold) + ' LABUBU di wallet untuk naik ke Level ' + next.lvl + ' (' + next.perHour + '/jam)';
+    document.getElementById('levelHint').textContent = 'Hold ' + fmt(next.hold) + ' LABUBU in your wallet to reach Level ' + next.lvl + ' (' + next.perHour + '/h)';
   } else {
     document.getElementById('levelTitle').textContent = 'Level Maksimal: ' + cur.lvl + ' · ' + tier.emoji + ' ' + tier.name;
     document.getElementById('levelCount').textContent = fmt(myHold) + ' LABUBU';
     document.getElementById('levelBar').style.width = '100%';
-    document.getElementById('levelHint').textContent = 'Kamu sudah di level tertinggi! Rate mining ' + cur.perHour + '/jam';
+    document.getElementById('levelHint').textContent = "You're at the highest level! Mining rate " + cur.perHour + '/h';
   }
 }
 
@@ -389,7 +398,7 @@ async function loadMe(){
     const d = await api('/api/me');
     myBalance = Number(d.user.balance || 0);
     document.getElementById('balance').textContent = fmt(myBalance);
-    document.getElementById('walletLine').textContent = d.user.wallet_address ? 'Wallet: ' + d.user.wallet_address : 'Wallet belum terhubung';
+    document.getElementById('walletLine').textContent = d.user.wallet_address ? 'Wallet: ' + d.user.wallet_address : 'Wallet not linked';
     renderLevel();
     const s = d.activeSession;
     const farmState = document.getElementById('farmState');
@@ -403,12 +412,12 @@ async function loadMe(){
       farmRun.style.display = 'inline';
       farmAccrued.style.display = 'block';
       if(s.claimable){
-        farmState.textContent = 'Sesi selesai — klaim hasil farmingmu!';
+        farmState.textContent = 'Session finished — claim your farming rewards!';
         farmBtn.style.display = 'none';
         claimBtn.style.display = 'block';
         farmAccrued.innerHTML = '+' + fmt(Math.floor(farmRate * 8)) + ' <small>LABUBU</small>';
       } else {
-        farmState.textContent = 'Sesi farming sedang berjalan.';
+        farmState.textContent = 'Farming session is running.';
         farmBtn.style.display = 'none';
         claimBtn.style.display = 'none';
         startTimer();
@@ -417,7 +426,7 @@ async function loadMe(){
       farmEndsAt = 0;
       farmRun.style.display = 'none';
       farmAccrued.style.display = 'none';
-      farmState.textContent = 'Tidak ada sesi aktif.';
+      farmState.textContent = 'No active session.';
       farmBtn.style.display = 'block';
       claimBtn.style.display = 'none';
       document.getElementById('farmTimer').textContent = '';
@@ -433,7 +442,7 @@ function startTimer(){
     const accrued = Math.min(farmRate * 8, Math.floor(elapsedH * farmRate));
     const el = document.getElementById('farmAccrued');
     if(el) el.innerHTML = '+' + fmt(accrued) + ' <small>LABUBU</small>';
-    if(ms <= 0){ document.getElementById('farmTimer').textContent = 'Selesai!'; loadMe(); clearInterval(farmTimer); return; }
+    if(ms <= 0){ document.getElementById('farmTimer').textContent = 'Done!'; loadMe(); clearInterval(farmTimer); return; }
     const h = Math.floor(ms/3600000), m = Math.floor(ms%3600000/60000), s = Math.floor(ms%60000/1000);
     document.getElementById('farmTimer').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   };
@@ -444,49 +453,56 @@ async function farmStart(){
   catch(e){ showErr(e.message); }
 }
 async function farmClaim(){
-  try{ const d = await api('/api/farm/claim',{method:'POST'}); tg.showAlert('Klaim berhasil: ' + fmt(d.claimed) + ' LABUBU'); loadMe(); }
+  try{ const d = await api('/api/farm/claim',{method:'POST'}); tg.showAlert('Claimed: ' + fmt(d.claimed) + ' LABUBU'); loadMe(); }
   catch(e){ showErr(e.message); }
 }
 async function loadTasks(){
   try{
     const d = await api('/api/tasks');
-    const open = d.tasks.filter(t=>!t.done).length;
+    const open = d.tasks.filter(t=>!t.done && t.kind!=='friend_buy').length;
     document.getElementById('missionCount').textContent = open;
-    document.getElementById('taskList').innerHTML = d.tasks.map(t =>
-      `<div class="row"><div><b>${t.title}</b><br><span class="muted">${t.description} — 🎁 ${fmt(t.reward)} LABUBU${t.kind==='referral'&&t.target?` (${t.progress||0}/${t.target})`:''}</span></div>` +
-      (t.done ? `<span class="pill ok">Selesai</span>` : `<button class="btn secondary" style="width:auto;margin:0;padding:8px 14px" onclick="claimTask('${t.id}')">Klaim</button>`) + `</div>`
-    ).join('');
+    document.getElementById('taskList').innerHTML = d.tasks.map(t => {
+      let extra = '';
+      if(t.kind==='referral'&&t.target) extra = ` (${t.progress||0}/${t.target})`;
+      if(t.kind==='friend_buy') extra = ` (${t.progress||0} friend buys — ${fmt(t.earned||0)} LABUBU earned)`;
+      const joinBtn = t.url ? `<button class="btn secondary" style="width:auto;margin:0 6px 0 0;padding:8px 14px" onclick="tg.openTelegramLink('${t.url}')">Join</button>` : '';
+      const action = t.kind==='friend_buy'
+        ? `<span class="pill">Auto</span>`
+        : t.done ? `<span class="pill ok">Done</span>`
+        : `<button class="btn secondary" style="width:auto;margin:0;padding:8px 14px" onclick="claimTask('${t.id}')">Claim</button>`;
+      return `<div class="row"><div><b>${t.title}</b><br><span class="muted">${t.description} — 🎁 ${fmt(t.reward)} LABUBU${extra}</span></div><div style="display:flex;align-items:center">${joinBtn}${action}</div></div>`;
+    }).join('');
   }catch(e){ showErr(e.message); }
 }
 async function claimTask(id){
-  try{ const d = await api('/api/tasks/'+id+'/claim',{method:'POST'}); tg.showAlert('Dapat ' + fmt(d.reward) + ' LABUBU'); loadTasks(); loadMe(); }
+  try{ const d = await api('/api/tasks/'+id+'/claim',{method:'POST'}); tg.showAlert('You earned ' + fmt(d.reward) + ' LABUBU'); loadTasks(); loadMe(); }
   catch(e){ showErr(e.message); }
 }
 async function loadRefs(){
   try{
     const d = await api('/api/referrals');
-    document.getElementById('refInfo').innerHTML = `Teman diundang: <b>${d.referrals.length}</b> • Bonus referral: <b>${fmt(d.referrals.reduce((s,r)=>s+r.earned,0))} LABUBU</b>`;
-    document.getElementById('refLink').textContent = d.link || 'Link referral belum tersedia (BOT_USERNAME belum diisi).';
+    document.getElementById('refInfo').innerHTML = `Friends invited: <b>${d.referrals.length}</b> • Referral bonus: <b>${fmt(d.referrals.reduce((s,r)=>s+r.earned,0))} LABUBU</b>`;
+    document.getElementById('refLink').textContent = d.link || 'Referral link not available yet (BOT_USERNAME not set).';
     window._refLink = d.link || '';
   }catch(e){ showErr(e.message); }
 }
 function copyRef(){
-  if(!window._refLink) return showErr('Link referral belum tersedia.');
+  if(!window._refLink) return showErr('Referral link not available.');
   navigator.clipboard && navigator.clipboard.writeText(window._refLink);
-  tg.showAlert('Link referral disalin!');
+  tg.showAlert('Referral link copied!');
 }
 async function loadBuy(){
   try{
     const d = await api('/api/buy/info');
     if(!d.configured){ document.getElementById('buyInfo').textContent = d.message; return; }
-    document.getElementById('buyInfo').textContent = d.rateText + ' • Minimal ' + d.minGram + ' GRAM';
+    document.getElementById('buyInfo').textContent = d.rateText + ' • Minimum ' + d.minGram + ' GRAM';
     document.getElementById('buyDetail').style.display = 'block';
     document.getElementById('buyTreasury').textContent = d.treasuryAddress;
     document.getElementById('buyMemo').textContent = d.memo;
   }catch(e){ showErr(e.message); }
 }
 async function buyPrepare(){
-  try{ const d = await api('/api/buy/prepare',{method:'POST'}); tg.showAlert('Pesanan dibuat. Kirim GRAM dengan memo: ' + d.memo); }
+  try{ const d = await api('/api/buy/prepare',{method:'POST'}); tg.showAlert('Order created. Send GRAM with memo: ' + d.memo); }
   catch(e){ showErr(e.message); }
 }
 async function loadHold(){
@@ -497,9 +513,9 @@ async function loadHold(){
     const cur = levelForHold(myHold);
     const curTier = tierForLevel(cur.lvl);
     document.getElementById('holdInfo').innerHTML =
-      `Level kamu: <b>Lv.${cur.lvl} · ${curTier.emoji} ${curTier.name} — ${cur.perHour}/jam (${fmt(cur.perDay)}/hari)</b><br>` +
+      `Your level: <b>Lv.${cur.lvl} · ${curTier.emoji} ${curTier.name} — ${cur.perHour}/h (${fmt(cur.perDay)}/day)</b><br>` +
       `Wallet hold: <b>${fmt(myHold)} LABUBU</b><br>` +
-      `Saldo on-chain kamu: <b>${d.onchainBalance===null?'—':fmt(d.onchainBalance)+' LABUBU'}</b>`;
+      `Your on-chain balance: <b>${d.onchainBalance===null?'—':fmt(d.onchainBalance)+' LABUBU'}</b>`;
     let rows = `<div class="row" style="font-weight:800"><span>Level</span><span>Wallet Hold</span><span>LABUBU/day</span></div>`;
     let lastTier = null;
     for(const l of LEVELS){
@@ -519,7 +535,7 @@ async function loadHold(){
 }
 async function linkWallet(){
   const address = document.getElementById('walletInput').value.trim();
-  try{ await api('/api/hold/link-wallet',{method:'POST',body:{address}}); tg.showAlert('Wallet terhubung!'); loadHold(); loadMe(); }
+  try{ await api('/api/hold/link-wallet',{method:'POST',body:{address}}); tg.showAlert('Wallet linked!'); loadHold(); loadMe(); }
   catch(e){ showErr(e.message); }
 }
 async function withdraw(){
@@ -527,7 +543,7 @@ async function withdraw(){
   const amount = Number(document.getElementById('wdAmount').value);
   try{
     const d = await api('/api/withdraw/request',{method:'POST',body:{address,amount}});
-    tg.showAlert('Withdraw diajukan (#' + d.withdrawalId + '). Menunggu persetujuan admin.');
+    tg.showAlert('Withdrawal requested (#' + d.withdrawalId + '). Waiting for admin approval.');
     loadMe(); loadWithdraws();
   }catch(e){ showErr(e.message); }
 }
@@ -536,7 +552,7 @@ async function loadWithdraws(){
     const d = await api('/api/withdraw/list');
     document.getElementById('wdList').innerHTML = d.withdrawals.map(w =>
       `<div class="row"><div>#${w.id} — ${fmt(w.amount)} LABUBU</div><span class="pill ${w.status==='approved'?'ok':w.status==='pending'?'wait':''}">${w.status}</span></div>`
-    ).join('') || '<p class="muted">Belum ada withdraw.</p>';
+    ).join('') || '<p class="muted">No withdrawals yet.</p>';
   }catch(e){ /* ignore */ }
 }
 function openTab(tab){
