@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS farm_sessions (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id       INTEGER NOT NULL REFERENCES users(telegram_id),
   started_at    INTEGER NOT NULL,
-  ends_at       INTEGER NOT NULL,
+  ends_at       INTEGER, -- NULL = mining is permanent (no end); legacy rows have a 24h end
   rate_per_hour INTEGER NOT NULL,
   claimed      INTEGER NOT NULL DEFAULT 0,
   claimed_at    INTEGER,
@@ -146,13 +146,47 @@ CREATE TABLE IF NOT EXISTS withdrawals (
 );
 `);
 
-// Migration: farm_sessions.last_claim_at (partial claims, 24h sessions).
+// Migration: farm_sessions.last_claim_at (partial claims, permanent mining).
 // No-op on fresh DBs (column is in CREATE TABLE) and on DBs that already
 // have it (SQLite throws "duplicate column name").
 try {
   db.prepare('ALTER TABLE farm_sessions ADD COLUMN last_claim_at INTEGER').run();
 } catch {
   /* already exists */
+}
+
+// Migration: farm_sessions.ends_at is now NULLABLE (mining is permanent;
+// new sessions store NULL). SQLite cannot ALTER a column's NOT NULL, so
+// rebuild the table when the old schema is detected. Runs after the
+// last_claim_at ALTER above so the column exists to copy.
+const endsAtInfo = db
+  .prepare("SELECT `notnull` FROM pragma_table_info('farm_sessions') WHERE name = 'ends_at'")
+  .get();
+if (endsAtInfo && endsAtInfo.notnull === 1) {
+  db.exec('BEGIN');
+  try {
+    db.exec(`CREATE TABLE farm_sessions_new (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id       INTEGER NOT NULL REFERENCES users(telegram_id),
+      started_at    INTEGER NOT NULL,
+      ends_at       INTEGER,
+      rate_per_hour INTEGER NOT NULL,
+      claimed      INTEGER NOT NULL DEFAULT 0,
+      claimed_at    INTEGER,
+      reward_nano   INTEGER,
+      last_claim_at INTEGER
+    )`);
+    db.exec(
+      'INSERT INTO farm_sessions_new (id, user_id, started_at, ends_at, rate_per_hour, claimed, claimed_at, reward_nano, last_claim_at) ' +
+        'SELECT id, user_id, started_at, ends_at, rate_per_hour, claimed, claimed_at, reward_nano, last_claim_at FROM farm_sessions'
+    );
+    db.exec('DROP TABLE farm_sessions');
+    db.exec('ALTER TABLE farm_sessions_new RENAME TO farm_sessions');
+    db.exec('COMMIT');
+  } catch (e) {
+    db.exec('ROLLBACK');
+    throw e;
+  }
 }
 
 // --- Seed default tasks (idempotent) ---

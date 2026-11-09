@@ -43,7 +43,8 @@ const config = {
   },
 
   // --- Farming ---
-  farmDurationMs: 24 * 60 * 60 * 1000, // 24 hours per session; claim anytime
+  // Mining is permanent once started (one start, runs forever); there is
+  // no session duration. Kept here only as documentation.
   referralRate: 0.10, // referrer earns 10% of referred friend's farmed amount
 
   // --- Rifty-style mining levels (copied from Rifty Mining's level table) ---

@@ -75,24 +75,19 @@ function createServer() {
     const pendingWithdraw = db
       .prepare("SELECT COUNT(*) AS c FROM withdrawals WHERE user_id = ? AND status = 'pending'")
       .get(req.tgUser.id).c;
-    // Accrued-but-unclaimed LABUBU for the active session (partial claims).
+    // Mining is permanent once started: no end, no countdown. Accrued is
+    // fractional (4 decimals on the client) so it visibly ticks every second.
     let activeSession = null;
     if (active) {
       const now = Date.now();
       const lastClaim = active.last_claim_at || active.started_at;
-      const upTo = Math.min(now, active.ends_at);
-      const unclaimed = Math.max(
-        0,
-        Math.floor(((upTo - lastClaim) / 3_600_000) * active.rate_per_hour)
-      );
+      const unclaimed = Math.max(0, ((now - lastClaim) / 3_600_000) * active.rate_per_hour);
       activeSession = {
         id: active.id,
         started_at: active.started_at,
-        ends_at: active.ends_at,
         rate_per_hour: active.rate_per_hour,
         last_claim_at: lastClaim,
         unclaimed,
-        ended: now >= active.ends_at,
         claimable: unclaimed > 0,
       };
     }
@@ -113,8 +108,11 @@ function createServer() {
   });
 
   // --- farming ---
-  // Rifty-style: the session rate is the user's LEVEL rate, set by their
-  // wallet hold (on-chain LABUBU). No wallet / lookup fails = Lv1 (25/h).
+  // Rifty-style: the rate is the user's LEVEL rate, set by their wallet
+  // hold (on-chain LABUBU). No wallet / lookup fails = Lv1 (25/h).
+  // Mining is PERMANENT once started: one start, it runs forever, no
+  // session end, no restart. The rate is refreshed from the current level
+  // on every claim (see /api/farm/claim).
   app.post('/api/farm/start', requireUser, async (req, res) => {
     const existing = db
       .prepare(
@@ -138,15 +136,14 @@ function createServer() {
     const now = Date.now();
     const info = db
       .prepare(
-        'INSERT INTO farm_sessions (user_id, started_at, ends_at, rate_per_hour, last_claim_at) VALUES (?, ?, ?, ?, ?)'
+        'INSERT INTO farm_sessions (user_id, started_at, ends_at, rate_per_hour, last_claim_at) VALUES (?, ?, NULL, ?, ?)'
       )
-      .run(req.tgUser.id, now, now + config.farmDurationMs, lvl.perHour, now);
+      .run(req.tgUser.id, now, lvl.perHour, now);
     res.json({
       ok: true,
       session: {
         id: info.lastInsertRowid,
         started_at: now,
-        ends_at: now + config.farmDurationMs,
         rate_per_hour: lvl.perHour,
         level: lvl.level,
         perDay: lvl.perDay,
@@ -154,10 +151,12 @@ function createServer() {
     });
   });
 
-  // Claim mined LABUBU ANYTIME (partial claims): pays what accrued since
-  // the last claim, capped at the session end (24h). The session keeps
-  // running until ends_at; claiming the remainder after it ends closes it.
-  app.post('/api/farm/claim', requireUser, (req, res) => {
+  // Claim mined LABUBU ANYTIME: pays what accrued since the last claim,
+  // straight to the in-bot balance. Mining is permanent once started —
+  // the session never ends and never needs a restart. On each claim the
+  // rate is refreshed from the user's current level (on-chain hold), so
+  // levelling up raises the rate from the next claim onward.
+  app.post('/api/farm/claim', requireUser, async (req, res) => {
     const session = db
       .prepare(
         "SELECT * FROM farm_sessions WHERE user_id = ? AND claimed = 0 ORDER BY started_at DESC LIMIT 1"
@@ -166,27 +165,32 @@ function createServer() {
     if (!session) return res.status(400).json({ ok: false, error: 'no active farming session' });
     const now = Date.now();
     const lastClaim = session.last_claim_at || session.started_at;
-    const upTo = Math.min(now, session.ends_at);
-    const elapsedMs = upTo - lastClaim;
-    const finished = now >= session.ends_at;
-    // At least 1 whole LABUBU must have accrued (no dust claims), except
-    // when the session is finished — then the claim also closes it even
-    // for dust or 0, so a new session can start.
-    if (elapsedMs <= 0 && !finished) {
+    const elapsedMs = now - lastClaim;
+    if (elapsedMs <= 0) {
       return res.status(400).json({ ok: false, error: 'nothing to claim yet' });
     }
-    const rewardNano = elapsedMs > 0 ? Math.floor((elapsedMs / 3_600_000) * session.rate_per_hour * NANO) : 0;
-    if (rewardNano < NANO && !finished) {
+    const rewardNano = Math.floor((elapsedMs / 3_600_000) * session.rate_per_hour * NANO);
+    if (rewardNano <= 0) {
       return res.status(400).json({ ok: false, error: 'nothing to claim yet' });
     }
     const user = getUser(req.tgUser.id);
+    // Refresh the rate from the current level (on-chain hold). The elapsed
+    // period pays at the OLD rate; the NEW rate applies from now on.
+    let newRate = session.rate_per_hour;
+    if (user.wallet_address) {
+      try {
+        const bal = await getJettonBalanceNano(user.wallet_address);
+        if (bal !== null) newRate = levelForHold(bal / NANO).perHour;
+      } catch (e) {
+        console.log(`[farm] hold lookup failed for user ${req.tgUser.id}: ${e.message} — keeping rate ${session.rate_per_hour}.`);
+      }
+    }
     let referralNano = 0;
     runTransaction(() => {
       addBalance(req.tgUser.id, rewardNano);
       db.prepare(
-        `UPDATE farm_sessions SET last_claim_at = ?, reward_nano = COALESCE(reward_nano, 0) + ?,
-         claimed = ?, claimed_at = ? WHERE id = ?`
-      ).run(upTo, rewardNano, finished ? 1 : 0, finished ? now : null, session.id);
+        'UPDATE farm_sessions SET last_claim_at = ?, rate_per_hour = ?, reward_nano = COALESCE(reward_nano, 0) + ? WHERE id = ?'
+      ).run(now, newRate, rewardNano, session.id);
       if (user.referrer_id) {
         referralNano = Math.floor(rewardNano * config.referralRate);
         if (referralNano > 0) {
@@ -201,7 +205,8 @@ function createServer() {
       ok: true,
       claimed: toLabubu(rewardNano),
       referralBonusToReferrer: toLabubu(referralNano),
-      sessionActive: !finished,
+      rate_per_hour: newRate,
+      sessionActive: true,
     });
   });
 
