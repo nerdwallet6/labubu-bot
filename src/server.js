@@ -7,11 +7,12 @@
 const express = require('express');
 const path = require('path');
 const config = require('./config');
-const { db, runTransaction, getUser, upsertUser, addBalance, toLabubu } = require('./db');
+const { db, runTransaction, getUser, upsertUser, addBalance, toLabubu, getSpins, grantSpins } = require('./db');
 const { validateInitData } = require('./auth');
 const { levelForHold, nextLevel, tierForLevel, miningLevels } = require('./hold');
 const { memoFor } = require('./buy');
 const { checkChannelMember: channelCheck } = require('./channel');
+const { rollSpin } = require('./spin');
 const { getJettonBalanceNano, isTonAddress } = require('./ton');
 
 const NANO = config.NANO;
@@ -315,6 +316,67 @@ function createServer() {
     });
     return res.json({ ok: true, reward: toLabubu(task.reward_nano) });
   }
+
+  // --- daily spin ---
+  app.get('/api/spin/status', requireUser, (req, res) => {
+    const s = getSpins(req.tgUser.id);
+    const now = Date.now();
+    const canClaimDaily = !s.last_daily_at || now - s.last_daily_at >= config.spinDailyIntervalMs;
+    const nextDailyInMs = canClaimDaily
+      ? 0
+      : config.spinDailyIntervalMs - (now - s.last_daily_at);
+    const history = db
+      .prepare(
+        'SELECT prize_nano, roll, created_at FROM spin_history WHERE user_id = ? ORDER BY created_at DESC LIMIT 5'
+      )
+      .all(req.tgUser.id)
+      .map((h) => ({ prize: toLabubu(h.prize_nano), roll: h.roll, created_at: h.created_at }));
+    res.json({
+      ok: true,
+      balance: s.balance,
+      totalSpins: s.total_spins,
+      totalWon: toLabubu(s.total_won_nano),
+      canClaimDaily,
+      nextDailyInMs,
+      prizes: config.spinPrizes,
+      history,
+    });
+  });
+
+  // Claim the free daily spin (1 per 24h).
+  app.post('/api/spin/daily', requireUser, (req, res) => {
+    const s = getSpins(req.tgUser.id);
+    const now = Date.now();
+    if (s.last_daily_at && now - s.last_daily_at < config.spinDailyIntervalMs) {
+      const waitMs = config.spinDailyIntervalMs - (now - s.last_daily_at);
+      return res.status(400).json({ ok: false, error: 'daily spin already claimed', nextDailyInMs: waitMs });
+    }
+    runTransaction(() => {
+      grantSpins(req.tgUser.id, 1);
+      db.prepare('UPDATE user_spins SET last_daily_at = ? WHERE user_id = ?').run(now, req.tgUser.id);
+    });
+    return res.json({ ok: true, balance: getSpins(req.tgUser.id).balance });
+  });
+
+  // Use 1 spin: roll the wheel and credit the prize (0 = no prize).
+  app.post('/api/spin/spin', requireUser, (req, res) => {
+    const { prize, roll } = rollSpin();
+    const prizeNano = prize * NANO;
+    const result = runTransaction(() => {
+      const s = getSpins(req.tgUser.id);
+      if (s.balance < 1) return { ok: false, error: 'no spins left' };
+      db.prepare(
+        'UPDATE user_spins SET balance = balance - 1, total_spins = total_spins + 1, total_won_nano = total_won_nano + ? WHERE user_id = ?'
+      ).run(prizeNano, req.tgUser.id);
+      if (prize > 0) addBalance(req.tgUser.id, prizeNano);
+      db.prepare(
+        'INSERT INTO spin_history (user_id, prize_nano, roll, created_at) VALUES (?, ?, ?, ?)'
+      ).run(req.tgUser.id, prizeNano, roll, Date.now());
+      return { ok: true, prize, roll, balance: getSpins(req.tgUser.id).balance };
+    });
+    if (!result.ok) return res.status(400).json(result);
+    return res.json(result);
+  });
 
   // --- referrals ---
   app.get('/api/referrals', requireUser, (req, res) => {

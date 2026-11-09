@@ -154,6 +154,21 @@ const config = {
     { level: 100, hold: 2848238, perHour: 3704.8, perDay: 88916 },
   ],
 
+  // --- Daily Spin (prizes in LABUBU; `chance` = cumulative roll threshold 0-100) ---
+  // A roll in [0,100) wins the FIRST prize whose threshold it is under:
+  // roll < 0.1 -> 10,000; < 1 -> 5,000; < 5 -> 2,500; < 10 -> 1,000;
+  // < 25 -> 100; < 50 -> 50; < 80 -> 25; roll >= 80 -> no prize (20%).
+  spinDailyIntervalMs: 24 * 60 * 60 * 1000, // 1 free spin every 24h
+  spinPrizes: [
+    { amount: 10000, chance: 0.1 },
+    { amount: 5000, chance: 1 },
+    { amount: 2500, chance: 5 },
+    { amount: 1000, chance: 10 },
+    { amount: 100, chance: 25 },
+    { amount: 50, chance: 50 },
+    { amount: 25, chance: 80 },
+  ],
+
   // --- Tasks (seeded defaults; rewards in LABUBU) ---
   dailyCheckinReward: 50,
   // Referrer bonus: when an invited friend's buy reaches this many LABUBU,

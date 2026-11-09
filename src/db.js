@@ -100,6 +100,22 @@ CREATE TABLE IF NOT EXISTS referral_buy_bonus (
   created_at    INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS user_spins (
+  user_id        INTEGER PRIMARY KEY REFERENCES users(telegram_id),
+  balance        INTEGER NOT NULL DEFAULT 0, -- free spins available
+  total_spins    INTEGER NOT NULL DEFAULT 0,
+  total_won_nano INTEGER NOT NULL DEFAULT 0,
+  last_daily_at  INTEGER                   -- ms timestamp of last daily free spin
+);
+
+CREATE TABLE IF NOT EXISTS spin_history (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id     INTEGER NOT NULL REFERENCES users(telegram_id),
+  prize_nano  INTEGER NOT NULL,
+  roll        REAL NOT NULL, -- roll in [0,100)
+  created_at  INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS hold_snapshots (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id        INTEGER NOT NULL REFERENCES users(telegram_id),
@@ -214,11 +230,30 @@ function upsertUser({ telegram_id, username, first_name, referrer_id }) {
     'INSERT INTO users (telegram_id, username, first_name, referrer_id, balance_nano, created_at, last_seen_at) VALUES (?, ?, ?, ?, 0, ?, ?)'
   ).run(telegram_id, username || null, first_name || null, ref, now, now);
   if (ref) {
-    db.prepare(
-      'INSERT INTO referrals (referrer_id, referred_id, earned_nano, created_at) VALUES (?, ?, 0, ?) ON CONFLICT(referrer_id, referred_id) DO NOTHING'
-    ).run(ref, telegram_id, now);
+    const r = db
+      .prepare(
+        'INSERT INTO referrals (referrer_id, referred_id, earned_nano, created_at) VALUES (?, ?, 0, ?) ON CONFLICT(referrer_id, referred_id) DO NOTHING'
+      )
+      .run(ref, telegram_id, now);
+    // New referral: the referrer earns 1 free Daily Spin.
+    if (r.changes === 1) grantSpins(ref, 1);
   }
   return getUser(telegram_id);
+}
+
+// --- Daily Spin helpers ---
+function getSpins(userId) {
+  let row = db.prepare('SELECT * FROM user_spins WHERE user_id = ?').get(userId);
+  if (!row) {
+    db.prepare('INSERT OR IGNORE INTO user_spins (user_id) VALUES (?)').run(userId);
+    row = db.prepare('SELECT * FROM user_spins WHERE user_id = ?').get(userId);
+  }
+  return row;
+}
+
+function grantSpins(userId, n) {
+  getSpins(userId);
+  db.prepare('UPDATE user_spins SET balance = balance + ? WHERE user_id = ?').run(n, userId);
 }
 
 function addBalance(telegramId, deltaNano) {
@@ -232,4 +267,4 @@ function toLabubu(nano) {
   return nano / config.NANO;
 }
 
-module.exports = { db, runTransaction, getUser, upsertUser, addBalance, toLabubu };
+module.exports = { db, runTransaction, getUser, upsertUser, addBalance, toLabubu, getSpins, grantSpins };

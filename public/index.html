@@ -151,6 +151,19 @@
     </div>
   </div>
 
+  <div class="card">
+    <div class="row" style="border-bottom:none">
+      <div><b>🎡 Daily Spin</b><br><span class="muted" id="spinInfo">Loading…</span></div>
+      <span class="count-badge" id="spinCount">–</span>
+    </div>
+    <div id="spinResult" class="muted" style="margin:4px 0"></div>
+    <button class="btn" id="spinBtn" onclick="doSpin()">🎡 Spin (1 spin)</button>
+    <button class="btn secondary" id="dailySpinBtn" onclick="claimDailySpin()" style="display:none">🎁 Claim free daily spin</button>
+    <div class="muted" id="spinNext" style="margin-top:6px"></div>
+    <div id="spinPrizes" class="muted" style="margin-top:8px"></div>
+    <div id="spinHistory" style="margin-top:6px"></div>
+  </div>
+
   <div class="feat">
     <div class="fcard" onclick="openTab('hold')">
       <img src="labubu-brown.jpg" alt="Hold Station">
@@ -574,6 +587,34 @@ async function loadWithdraws(){
     ).join('') || '<p class="muted">No withdrawals yet.</p>';
   }catch(e){ /* ignore */ }
 }
+function fmtHours(ms){ const h = Math.floor(ms/3600000), m = Math.floor(ms%3600000/60000); return h + 'h ' + m + 'm'; }
+async function loadSpin(){
+  try{
+    const d = await api('/api/spin/status');
+    document.getElementById('spinCount').textContent = d.balance;
+    document.getElementById('spinInfo').textContent = d.balance + ' spin' + (d.balance===1?'':'s') + ' available • Total won: ' + fmt(d.totalWon) + ' LABUBU';
+    document.getElementById('spinBtn').style.display = d.balance > 0 ? 'block' : 'none';
+    document.getElementById('dailySpinBtn').style.display = d.canClaimDaily ? 'block' : 'none';
+    document.getElementById('spinNext').textContent = d.canClaimDaily ? '' : 'Next free spin in ' + fmtHours(d.nextDailyInMs);
+    document.getElementById('spinPrizes').innerHTML = 'Prizes: ' + d.prizes.map(p => fmt(p.amount) + ' (' + p.chance + '%)').join(' • ');
+    document.getElementById('spinHistory').innerHTML = d.history.map(h =>
+      `<div class="row"><div>🎡 Spin</div><span>${h.prize > 0 ? `<b>+${fmt(h.prize)}</b> LABUBU` : 'No prize'}</span></div>`
+    ).join('');
+  }catch(e){ showErr(e.message); }
+}
+async function claimDailySpin(){
+  try{ const d = await api('/api/spin/daily',{method:'POST'}); tg.showAlert('Free spin claimed! You have ' + d.balance + ' spin(s).'); loadSpin(); }
+  catch(e){ showErr(e.message); }
+}
+async function doSpin(){
+  try{
+    const d = await api('/api/spin/spin',{method:'POST'});
+    document.getElementById('spinResult').innerHTML = d.prize > 0
+      ? `🎉 You won <b>${fmt(d.prize)} LABUBU</b>!`
+      : '😢 No prize this time — try again tomorrow!';
+    loadSpin(); loadMe();
+  }catch(e){ showErr(e.message); }
+}
 function openTab(tab){
   document.querySelectorAll('.bottomnav button').forEach(x=>x.classList.toggle('active', x.dataset.tab===tab));
   document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
@@ -588,6 +629,7 @@ function openTab(tab){
 loadMe();
 loadTasks();
 loadHold(); // sets the level (from wallet hold) for the topbar + stats
+loadSpin();
 </script>
 </body>
 </html>
