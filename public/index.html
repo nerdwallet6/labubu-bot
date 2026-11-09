@@ -76,6 +76,10 @@
   .tiercard .trange { font-size:10px; color:var(--muted); display:block; }
   .tiercard .you { font-size:9px; font-weight:800; color:var(--gold); display:block; }
   .tiercard.active { border-color:var(--brown); background:#f7f0e3; box-shadow:0 2px 8px rgba(107,68,35,.15); }
+  .wheel-wrap { position:relative; width:280px; height:280px; margin:0 auto 10px; }
+  .wheel { position:absolute; inset:0; border-radius:50%; border:3px solid var(--brown); overflow:hidden; transition:transform 4.2s cubic-bezier(0.12,0.85,0.08,1); box-shadow:0 4px 16px rgba(107,68,35,.25); }
+  .wheel-pointer { position:absolute; left:50%; top:-4px; transform:translateX(-50%); width:0; height:0; border-left:12px solid transparent; border-right:12px solid transparent; border-top:18px solid var(--deep); z-index:3; }
+  .wheel-hub { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:64px; height:64px; border-radius:50%; background:#fff; border:2px solid var(--brown); display:flex; align-items:center; justify-content:center; font-size:28px; cursor:pointer; z-index:2; box-shadow:0 2px 8px rgba(107,68,35,.3); }
   .section { display:none; }
   .section.active { display:block; }
   .timer { font-size:20px; font-weight:800; margin:6px 0; letter-spacing:1px; }
@@ -105,7 +109,7 @@
   <div class="announce">
     <b>🚀 LISTING 13 NOVEMBER 2026</b>
     <span>LABUBU lists on STON.fi — 13 November 2026</span>
-    <button class="btn" onclick="tg.openLink('https://ston.fi')">Trade on STON.fi ↗</button>
+    <button class="btn" onclick="tg.openLink('https://app.ston.fi/swap?chartVisible=false&ft=GRAM&tt=EQC4E35T2HhooVyuKj5I6OEh7JH4sFvxvkyHVqKnAiOsrWEN')">Trade on STON.fi ↗</button>
   </div>
   <div class="card">
     <div class="muted">App Balance</div>
@@ -156,11 +160,15 @@
       <div><b>🎡 Daily Spin</b><br><span class="muted" id="spinInfo">Loading…</span></div>
       <span class="count-badge" id="spinCount">–</span>
     </div>
-    <div id="spinResult" class="muted" style="margin:4px 0"></div>
+    <div class="wheel-wrap">
+      <div class="wheel" id="wheel"></div>
+      <div class="wheel-pointer"></div>
+      <div class="wheel-hub" onclick="doSpin()">🎡</div>
+    </div>
+    <div id="spinResult" class="muted" style="margin:4px 0; text-align:center"></div>
     <button class="btn" id="spinBtn" onclick="doSpin()">🎡 Spin (1 spin)</button>
     <button class="btn secondary" id="dailySpinBtn" onclick="claimDailySpin()" style="display:none">🎁 Claim free daily spin</button>
     <div class="muted" id="spinNext" style="margin-top:6px"></div>
-    <div id="spinPrizes" class="muted" style="margin-top:8px"></div>
     <div id="spinHistory" style="margin-top:6px"></div>
   </div>
 
@@ -587,6 +595,34 @@ async function loadWithdraws(){
     ).join('') || '<p class="muted">No withdrawals yet.</p>';
   }catch(e){ /* ignore */ }
 }
+// Daily Spin wheel: 8 equal segments (7 prizes + TRY AGAIN). The server
+// decides the prize; the wheel only animates to that segment.
+const SEGMENTS = [
+  { amount: 10000, label: '10,000', bg: '#b45309', fg: '#fff' },
+  { amount: 100, label: '100', bg: '#f7f0e3', fg: '#6b4423' },
+  { amount: 5000, label: '5,000', bg: '#8b5e3c', fg: '#fff' },
+  { amount: 50, label: '50', bg: '#fdfaf3', fg: '#6b4423' },
+  { amount: 2500, label: '2,500', bg: '#d9a441', fg: '#fff' },
+  { amount: 25, label: '25', bg: '#e8dcc8', fg: '#6b4423' },
+  { amount: 1000, label: '1,000', bg: '#a67c52', fg: '#fff' },
+  { amount: 0, label: 'TRY AGAIN', bg: '#efe7fd', fg: '#5b21b6' },
+];
+let spinning = false, wheelRot = 0;
+function polar(cx, cy, r, deg){ const rad = (deg - 90) * Math.PI / 180; return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)]; }
+function buildWheel(){
+  const cx = 140, cy = 140, r = 138, seg = 360 / SEGMENTS.length;
+  let svg = `<svg viewBox="0 0 280 280" style="width:100%;height:100%;display:block">`;
+  SEGMENTS.forEach((s, i) => {
+    const a0 = i * seg, a1 = (i + 1) * seg;
+    const [x0, y0] = polar(cx, cy, r, a0);
+    const [x1, y1] = polar(cx, cy, r, a1);
+    svg += `<path d="M ${cx} ${cy} L ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)} Z" fill="${s.bg}" stroke="#fff" stroke-width="1.5"/>`;
+    const [tx, ty] = polar(cx, cy, r - 36, a0 + seg / 2);
+    svg += `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" fill="${s.fg}" font-size="13" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${(a0 + seg / 2).toFixed(1)} ${cx} ${cy})">${s.label}</text>`;
+  });
+  svg += `</svg>`;
+  document.getElementById('wheel').innerHTML = svg;
+}
 function fmtHours(ms){ const h = Math.floor(ms/3600000), m = Math.floor(ms%3600000/60000); return h + 'h ' + m + 'm'; }
 async function loadSpin(){
   try{
@@ -596,7 +632,6 @@ async function loadSpin(){
     document.getElementById('spinBtn').style.display = d.balance > 0 ? 'block' : 'none';
     document.getElementById('dailySpinBtn').style.display = d.canClaimDaily ? 'block' : 'none';
     document.getElementById('spinNext').textContent = d.canClaimDaily ? '' : 'Next free spin in ' + fmtHours(d.nextDailyInMs);
-    document.getElementById('spinPrizes').innerHTML = 'Prizes: ' + d.prizes.map(p => fmt(p.amount) + ' (' + p.chance + '%)').join(' • ');
     document.getElementById('spinHistory').innerHTML = d.history.map(h =>
       `<div class="row"><div>🎡 Spin</div><span>${h.prize > 0 ? `<b>+${fmt(h.prize)}</b> LABUBU` : 'No prize'}</span></div>`
     ).join('');
@@ -607,13 +642,32 @@ async function claimDailySpin(){
   catch(e){ showErr(e.message); }
 }
 async function doSpin(){
+  if(spinning) return;
+  spinning = true;
+  document.getElementById('spinBtn').disabled = true;
+  document.getElementById('spinResult').textContent = '';
   try{
     const d = await api('/api/spin/spin',{method:'POST'});
-    document.getElementById('spinResult').innerHTML = d.prize > 0
-      ? `🎉 You won <b>${fmt(d.prize)} LABUBU</b>!`
-      : '😢 No prize this time — try again tomorrow!';
-    loadSpin(); loadMe();
-  }catch(e){ showErr(e.message); }
+    const segIdx = Math.max(0, SEGMENTS.findIndex(s => s.amount === d.prize));
+    const seg = 360 / SEGMENTS.length;
+    const center = (segIdx + 0.5) * seg;
+    const jitter = Math.random() * 16 - 8; // land within ±8° of the segment center
+    const target = wheelRot + 5 * 360 + (((-center - (wheelRot % 360)) % 360 + 360) % 360) + jitter;
+    document.getElementById('wheel').style.transform = `rotate(${target}deg)`;
+    wheelRot = target;
+    setTimeout(() => {
+      document.getElementById('spinResult').innerHTML = d.prize > 0
+        ? `🎉 You won <b>${fmt(d.prize)} LABUBU</b>!`
+        : '😢 No prize this time — try again tomorrow!';
+      loadSpin(); loadMe();
+      spinning = false;
+      document.getElementById('spinBtn').disabled = false;
+    }, 4300);
+  }catch(e){
+    spinning = false;
+    document.getElementById('spinBtn').disabled = false;
+    showErr(e.message);
+  }
 }
 function openTab(tab){
   document.querySelectorAll('.bottomnav button').forEach(x=>x.classList.toggle('active', x.dataset.tab===tab));
@@ -626,6 +680,7 @@ function openTab(tab){
   if(tab==='wd') loadWithdraws();
   window.scrollTo(0,0);
 }
+buildWheel();
 loadMe();
 loadTasks();
 loadHold(); // sets the level (from wallet hold) for the topbar + stats

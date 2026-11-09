@@ -181,7 +181,7 @@ const config = {
   // --- Listing (announced) ---
   listingDate: '13 November 2026',
   listingVenue: 'STON.fi',
-  listingUrl: 'https://ston.fi',
+  listingUrl: 'https://app.ston.fi/swap?chartVisible=false&ft=GRAM&tt=EQC4E35T2HhooVyuKj5I6OEh7JH4sFvxvkyHVqKnAiOsrWEN',
 
   // --- Withdraw ---
   withdrawMin: 10_000, // minimum withdrawal, LABUBU

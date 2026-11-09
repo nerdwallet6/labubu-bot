@@ -338,7 +338,7 @@ function createServer() {
       totalWon: toLabubu(s.total_won_nano),
       canClaimDaily,
       nextDailyInMs,
-      prizes: config.spinPrizes,
+      prizes: config.spinPrizes.map((p) => p.amount),
       history,
     });
   });
