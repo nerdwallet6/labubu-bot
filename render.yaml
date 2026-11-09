@@ -1,0 +1,37 @@
+# Render deploy for the LABUBU Telegram mining bot + Mini App.
+# One service serves both: the Express API + Mini App (public/index.html)
+# and the grammy bot (polling). Render sets PORT automatically.
+#
+# NOTE: Render free tier has NO persistent disk — the SQLite database
+# (data/labubu.db: users, balances, withdrawals) is wiped on every
+# restart/redeploy. Fine for a demo; for production add a persistent disk
+# (paid) or move the DB to Turso. The BOT_TOKEN must be set as a secret
+# env var in the Render dashboard (never commit .env).
+
+services:
+  - type: web
+    name: labubu-bot
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node src/index.js
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: BOT_TOKEN
+        sync: false
+      - key: BOT_USERNAME
+        value: LabubuVerseMiningbot
+      - key: ADMIN_TELEGRAM_ID
+        value: 8235699679,5628568527
+      - key: JETTON_MASTER
+        value: EQC4E35T2HhooVyuKj5I6OEh7JH4sFvxvkyHVqKnAiOsrWEN
+      - key: TREASURY_ADDRESS
+        value: UQB1lNZkjPHd5Iy0ahaM9jARlPZ8TWdpGv4I0KbvYoiHuogw
+      - key: RUN_BOT
+        value: "true"
+      # After the first deploy, set MINI_APP_URL to the Render service URL
+      # (https://labubu-bot.onrender.com) and redeploy — the bot then shows
+      # the "Open Mining App" button. Do NOT set it before the first deploy.
+      - key: MINI_APP_URL
+        value: ""

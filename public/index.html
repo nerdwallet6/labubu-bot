@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LABUBU Mining</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --gold:#f5c518; --green:#22c55e; --red:#ef4444; --text:#f1f5f9; --muted:#94a3b8; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; padding:12px 12px 32px; }
+  h1 { font-size:22px; text-align:center; margin:8px 0 2px; }
+  .sub { text-align:center; color:var(--muted); font-size:13px; margin-bottom:14px; }
+  .card { background:var(--card); border-radius:14px; padding:14px; margin-bottom:12px; }
+  .card h2 { font-size:15px; margin-bottom:8px; }
+  .big { font-size:26px; font-weight:700; color:var(--gold); }
+  .muted { color:var(--muted); font-size:13px; }
+  .btn { display:block; width:100%; padding:12px; border:none; border-radius:10px; background:var(--gold); color:#111; font-size:15px; font-weight:700; cursor:pointer; margin-top:10px; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  .btn.secondary { background:#334155; color:var(--text); }
+  .row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #334155; }
+  .row:last-child { border-bottom:none; }
+  input { width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:var(--text); font-size:14px; margin-top:6px; }
+  .mono { font-family:ui-monospace,Menlo,monospace; font-size:12px; word-break:break-all; background:#0f172a; padding:8px; border-radius:8px; margin-top:6px; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:99px; font-size:12px; background:#334155; }
+  .pill.ok { background:#14532d; color:#86efac; }
+  .pill.wait { background:#713f12; color:#fde68a; }
+  #err { color:var(--red); font-size:13px; text-align:center; margin:8px 0; }
+  .tabs { display:flex; gap:6px; margin-bottom:12px; }
+  .tabs button { flex:1; padding:9px 4px; border-radius:10px; border:none; background:#1e293b; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer; }
+  .tabs button.active { background:var(--gold); color:#111; }
+  .section { display:none; }
+  .section.active { display:block; }
+</style>
+</head>
+<body>
+<h1>🪙 LABUBU Mining</h1>
+<p class="sub">Mine • Hold • Earn — 1 GRAM = 2.500 LABUBU</p>
+<div id="err"></div>
+
+<div class="card">
+  <div class="muted">Saldo kamu (in-bot)</div>
+  <div class="big" id="balance">—</div>
+  <div class="muted" id="walletLine">Wallet belum terhubung</div>
+</div>
+
+<div class="tabs">
+  <button data-tab="farm" class="active">⛏️ Farm</button>
+  <button data-tab="tasks">🎁 Tugas</button>
+  <button data-tab="refs">👥 Referral</button>
+  <button data-tab="buy">🛒 Beli</button>
+  <button data-tab="hold">💎 Hold</button>
+  <button data-tab="wd">💸 Tarik</button>
+</div>
+
+<div class="section active" id="tab-farm">
+  <div class="card">
+    <h2>⛏️ Farming</h2>
+    <div id="farmState" class="muted">Memuat…</div>
+    <div id="farmTimer" style="font-size:20px;font-weight:700;margin:8px 0;"></div>
+    <button class="btn" id="farmBtn" onclick="farmStart()">Mulai Farming (8 jam)</button>
+    <button class="btn" id="claimBtn" onclick="farmClaim()" style="display:none">Klaim Hasil Farming</button>
+    <p class="muted" style="margin-top:8px">Rate dasar: 100 LABUBU/jam → 800 LABUBU per sesi 8 jam. Referrer kamu dapat 10% dari hasil farmingmu.</p>
+  </div>
+</div>
+
+<div class="section" id="tab-tasks">
+  <div class="card">
+    <h2>🎁 Tugas Harian</h2>
+    <div id="taskList" class="muted">Memuat…</div>
+  </div>
+</div>
+
+<div class="section" id="tab-refs">
+  <div class="card">
+    <h2>👥 Referral</h2>
+    <div id="refInfo" class="muted">Memuat…</div>
+    <div class="mono" id="refLink"></div>
+    <button class="btn secondary" onclick="copyRef()">Salin Link Referral</button>
+    <p class="muted" style="margin-top:8px">Kamu dapat 10% dari LABUBU yang di-farming teman yang kamu undang.</p>
+  </div>
+</div>
+
+<div class="section" id="tab-buy">
+  <div class="card">
+    <h2>🛒 Beli LABUBU</h2>
+    <div id="buyInfo" class="muted">Memuat…</div>
+    <div id="buyDetail" style="display:none">
+      <p class="muted">Kirim GRAM ke alamat ini:</p>
+      <div class="mono" id="buyTreasury"></div>
+      <p class="muted" style="margin-top:8px">Memo (wajib diisi di kolom komentar transfer):</p>
+      <div class="mono" id="buyMemo"></div>
+      <button class="btn" onclick="buyPrepare()">Saya Sudah Siap — Buat Pesanan Beli</button>
+      <p class="muted" style="margin-top:8px">Setelah transfer, bot otomatis mengkredit LABUBU ke saldo kamu (biasanya beberapa menit). Minimal 0,1 GRAM.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" id="tab-hold">
+  <div class="card">
+    <h2>💎 Hold-to-Earn</h2>
+    <div id="holdInfo" class="muted">Memuat…</div>
+    <input id="walletInput" placeholder="Alamat TON kamu (EQ... / UQ...)" />
+    <button class="btn secondary" onclick="linkWallet()">Hubungkan Wallet</button>
+    <p class="muted" style="margin-top:8px">Hold minimal 1.000.000 LABUBU di wallet selama 24 jam penuh untuk ikut pembagian 1.000.000 LABUBU/hari, dibagi proporsional. Saldo dihitung dari nilai terendah awal &amp; akhir hari (anti-curang).</p>
+  </div>
+</div>
+
+<div class="section" id="tab-wd">
+  <div class="card">
+    <h2>💸 Withdraw</h2>
+    <input id="wdAddress" placeholder="Alamat TON tujuan (EQ... / UQ...)" />
+    <input id="wdAmount" type="number" placeholder="Jumlah LABUBU (min 10.000)" />
+    <button class="btn" onclick="withdraw()">Ajukan Withdraw</button>
+    <p class="muted" style="margin-top:8px">v1: permintaan masuk antrean dan disetujui admin secara manual. Pengiriman Jetton otomatis menyusul di versi berikutnya.</p>
+    <div id="wdList" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready(); tg.expand();
+const initData = tg.initData || '';
+
+function showErr(m){ document.getElementById('err').textContent = m || ''; }
+async function api(path, opts){
+  const res = await fetch(path, {
+    method: (opts && opts.method) || 'GET',
+    headers: { 'Content-Type':'application/json', 'x-telegram-init-data': initData },
+    body: opts && opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  const data = await res.json().catch(()=>({ok:false,error:'bad response'}));
+  if(!data.ok) throw new Error(data.error || 'request failed');
+  return data;
+}
+const fmt = n => Number(n||0).toLocaleString('id-ID');
+let farmEndsAt = 0, farmTimer = null;
+
+async function loadMe(){
+  try{
+    const d = await api('/api/me');
+    document.getElementById('balance').textContent = fmt(d.user.balance) + ' LABUBU';
+    document.getElementById('walletLine').textContent = d.user.wallet_address ? 'Wallet: ' + d.user.wallet_address : 'Wallet belum terhubung';
+    const s = d.activeSession;
+    const farmState = document.getElementById('farmState');
+    const farmBtn = document.getElementById('farmBtn');
+    const claimBtn = document.getElementById('claimBtn');
+    if(s){
+      farmEndsAt = s.ends_at;
+      farmState.textContent = s.claimable ? 'Sesi selesai — klaim hasil farmingmu!' : 'Sesi farming sedang berjalan.';
+      farmBtn.style.display = 'none';
+      claimBtn.style.display = s.claimable ? 'block' : 'none';
+      startTimer();
+    } else {
+      farmEndsAt = 0;
+      farmState.textContent = 'Tidak ada sesi aktif.';
+      farmBtn.style.display = 'block';
+      claimBtn.style.display = 'none';
+      document.getElementById('farmTimer').textContent = '';
+    }
+  }catch(e){ showErr(e.message); }
+}
+function startTimer(){
+  clearInterval(farmTimer);
+  const tick = () => {
+    if(!farmEndsAt) return;
+    const ms = farmEndsAt - Date.now();
+    if(ms <= 0){ document.getElementById('farmTimer').textContent = 'Selesai!'; loadMe(); clearInterval(farmTimer); return; }
+    const h = Math.floor(ms/3600000), m = Math.floor(ms%3600000/60000), s = Math.floor(ms%60000/1000);
+    document.getElementById('farmTimer').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  };
+  tick(); farmTimer = setInterval(tick, 1000);
+}
+async function farmStart(){
+  try{ await api('/api/farm/start',{method:'POST'}); tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'); loadMe(); }
+  catch(e){ showErr(e.message); }
+}
+async function farmClaim(){
+  try{ const d = await api('/api/farm/claim',{method:'POST'}); tg.showAlert('Klaim berhasil: ' + fmt(d.claimed) + ' LABUBU'); loadMe(); }
+  catch(e){ showErr(e.message); }
+}
+async function loadTasks(){
+  try{
+    const d = await api('/api/tasks');
+    document.getElementById('taskList').innerHTML = d.tasks.map(t =>
+      `<div class="row"><div><b>${t.title}</b><br><span class="muted">${t.description} — 🎁 ${fmt(t.reward)} LABUBU${t.kind==='referral'&&t.target?` (${t.progress||0}/${t.target})`:''}</span></div>` +
+      (t.done ? `<span class="pill ok">Selesai</span>` : `<button class="btn secondary" style="width:auto;margin:0;padding:8px 14px" onclick="claimTask('${t.id}')">Klaim</button>`) + `</div>`
+    ).join('');
+  }catch(e){ showErr(e.message); }
+}
+async function claimTask(id){
+  try{ const d = await api('/api/tasks/'+id+'/claim',{method:'POST'}); tg.showAlert('Dapat ' + fmt(d.reward) + ' LABUBU'); loadTasks(); loadMe(); }
+  catch(e){ showErr(e.message); }
+}
+async function loadRefs(){
+  try{
+    const d = await api('/api/referrals');
+    document.getElementById('refInfo').innerHTML = `Teman diundang: <b>${d.referrals.length}</b> • Bonus referral: <b>${fmt(d.referrals.reduce((s,r)=>s+r.earned,0))} LABUBU</b>`;
+    document.getElementById('refLink').textContent = d.link || 'Link referral belum tersedia (BOT_USERNAME belum diisi).';
+    window._refLink = d.link || '';
+  }catch(e){ showErr(e.message); }
+}
+function copyRef(){
+  if(!window._refLink) return showErr('Link referral belum tersedia.');
+  navigator.clipboard && navigator.clipboard.writeText(window._refLink);
+  tg.showAlert('Link referral disalin!');
+}
+async function loadBuy(){
+  try{
+    const d = await api('/api/buy/info');
+    if(!d.configured){ document.getElementById('buyInfo').textContent = d.message; return; }
+    document.getElementById('buyInfo').textContent = d.rateText + ' • Minimal ' + d.minGram + ' GRAM';
+    document.getElementById('buyDetail').style.display = 'block';
+    document.getElementById('buyTreasury').textContent = d.treasuryAddress;
+    document.getElementById('buyMemo').textContent = d.memo;
+  }catch(e){ showErr(e.message); }
+}
+async function buyPrepare(){
+  try{ const d = await api('/api/buy/prepare',{method:'POST'}); tg.showAlert('Pesanan dibuat. Kirim GRAM dengan memo: ' + d.memo); }
+  catch(e){ showErr(e.message); }
+}
+async function loadHold(){
+  try{
+    const d = await api('/api/hold/status');
+    document.getElementById('holdInfo').innerHTML =
+      `Pool harian: <b>${fmt(d.dailyPool)} LABUBU</b><br>` +
+      `Sisa pool: <b>${fmt(d.poolRemaining)} LABUBU</b> (${d.daysUsed}/${d.daysTotal} hari)<br>` +
+      `Saldo on-chain kamu: <b>${d.onchainBalance===null?'—':fmt(d.onchainBalance)+' LABUBU'}</b><br>` +
+      `Total reward hold kamu: <b>${fmt(d.totalEarned)} LABUBU</b>`;
+    if(d.walletAddress) document.getElementById('walletInput').value = d.walletAddress;
+  }catch(e){ showErr(e.message); }
+}
+async function linkWallet(){
+  const address = document.getElementById('walletInput').value.trim();
+  try{ await api('/api/hold/link-wallet',{method:'POST',body:{address}}); tg.showAlert('Wallet terhubung!'); loadHold(); loadMe(); }
+  catch(e){ showErr(e.message); }
+}
+async function withdraw(){
+  const address = document.getElementById('wdAddress').value.trim();
+  const amount = Number(document.getElementById('wdAmount').value);
+  try{
+    const d = await api('/api/withdraw/request',{method:'POST',body:{address,amount}});
+    tg.showAlert('Withdraw diajukan (#' + d.withdrawalId + '). Menunggu persetujuan admin.');
+    loadMe(); loadWithdraws();
+  }catch(e){ showErr(e.message); }
+}
+async function loadWithdraws(){
+  try{
+    const d = await api('/api/withdraw/list');
+    document.getElementById('wdList').innerHTML = d.withdrawals.map(w =>
+      `<div class="row"><div>#${w.id} — ${fmt(w.amount)} LABUBU</div><span class="pill ${w.status==='approved'?'ok':w.status==='pending'?'wait':''}">${w.status}</span></div>`
+    ).join('') || '<p class="muted">Belum ada withdraw.</p>';
+  }catch(e){ /* ignore */ }
+}
+document.querySelectorAll('.tabs button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('tab-'+b.dataset.tab).classList.add('active');
+    if(b.dataset.tab==='tasks') loadTasks();
+    if(b.dataset.tab==='refs') loadRefs();
+    if(b.dataset.tab==='buy') loadBuy();
+    if(b.dataset.tab==='hold') loadHold();
+    if(b.dataset.tab==='wd') loadWithdraws();
+  });
+});
+loadMe();
+</script>
+</body>
+</html>

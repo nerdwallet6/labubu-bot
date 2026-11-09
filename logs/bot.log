@@ -1,0 +1,12 @@
+[bot] polling started.
+[bot] WARNING: MINI_APP_URL is not set — the Mini App button will be hidden until you set it.
+[hold] daily tick scheduled at 00:00 UTC.
+[buy] poller watching treasury UQB1lNZkjPHd5Iy0ahaM9jARlPZ8TWdpGv4I0KbvYoiHuogw every 60s.
+[server] API + Mini App listening on http://localhost:3000
+[server] health: http://localhost:3000/api/health
+[bot] polling started.
+[bot] WARNING: MINI_APP_URL is not set — the Mini App button will be hidden until you set it.
+[hold] daily tick scheduled at 00:00 UTC.
+[buy] poller watching treasury UQB1lNZkjPHd5Iy0ahaM9jARlPZ8TWdpGv4I0KbvYoiHuogw every 60s.
+[server] API + Mini App listening on http://localhost:3000
+[server] health: http://localhost:3000/api/health
