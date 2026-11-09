@@ -39,13 +39,15 @@ function createBot() {
     });
     const refLink = `https://t.me/${ctx.me.username}?start=ref_${from.id}`;
     await ctx.reply(
-      `👋 Welcome to LABUBU Mining, ${from.first_name || 'miner'}!\n\n` +
-        `🪙 Balance: ${toLabubu(user.balance_nano).toLocaleString()} LABUBU\n` +
-        `⛏️ Farming: 8h sessions, 100 LABUBU/hour\n` +
-        `🎁 Daily check-in, tasks and referrals inside the app\n` +
-        `💎 Hold LABUBU in your wallet to earn a share of 1,000,000 LABUBU/day\n\n` +
-        `Your referral link:\n${refLink}\n\n` +
-        `Use /balance, /buy or /help.`,
+      `🌟 Welcome to LABUBU Verse Mining!\n\n` +
+        `Enter the Verse and build your cosmic mining adventure on Telegram.\n\n` +
+        `⛏️ Collect LABUBU in the app\n` +
+        `💎 Hold LABUBU and earn a share of 1,000,000 LABUBU/day\n` +
+        `🎁 Complete missions and earn rewards\n` +
+        `👥 Invite friends and grow your crew\n\n` +
+        `🪙 Your balance: ${toLabubu(user.balance_nano).toLocaleString()} LABUBU\n\n` +
+        `👇 Start your journey with the button below.\n\n` +
+        `Your referral link:\n${refLink}`,
       { reply_markup: menuKeyboard() }
     );
   });

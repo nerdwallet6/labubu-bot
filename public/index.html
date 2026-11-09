@@ -3,107 +3,163 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>LABUBU Mining</title>
+<title>LABUBU Verse Mining</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-  :root { --bg:#ffe3ee; --card:#fff7fa; --pink:#ff5c8a; --pink2:#ff8fab; --deep:#e91e63; --green:#22c55e; --red:#ef4444; --text:#4a2c33; --muted:#a06b7c; --line:#ffc9d9; }
+  :root { --bg:#07070f; --card:#15152a; --card2:#1c1c36; --line:#262640; --pink:#ff5c8a; --violet:#a855f7; --cyan:#22d3ee; --gold:#f5c518; --green:#22c55e; --red:#ef4444; --text:#f1f1f8; --muted:#8b8ba3; }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { background:linear-gradient(180deg,#ffc9dd 0%,#ffe3ee 30%,#fff5f9 70%); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; padding:12px 12px 32px; min-height:100vh; }
-  .hero { text-align:center; margin:6px 0 14px; }
-  .hero img { width:150px; height:150px; object-fit:cover; border-radius:50%; border:5px solid #fff; box-shadow:0 8px 24px rgba(233,30,99,.35); }
-  .hero h1 { font-size:24px; margin-top:10px; letter-spacing:.5px; }
-  .hero h1 span { color:var(--deep); }
-  .hero .sub { color:var(--muted); font-size:13px; margin-top:4px; }
-  .rate { display:inline-block; margin-top:8px; background:#fff; color:var(--deep); font-weight:700; font-size:13px; padding:5px 12px; border-radius:99px; border:1px solid var(--line); }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:14px; margin-bottom:12px; box-shadow:0 4px 14px rgba(233,30,99,.08); }
+  body { background:radial-gradient(120% 60% at 50% 0%, #1a1033 0%, var(--bg) 60%); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; padding:12px 12px 84px; min-height:100vh; }
+  .topbar { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .topbar img.logo { width:38px; height:38px; border-radius:50%; border:2px solid var(--pink); object-fit:cover; }
+  .topbar .name { font-size:19px; font-weight:800; flex:1; }
+  .topbar .name span { color:var(--pink); }
+  .lvl-pill { background:var(--card); border:1px solid var(--line); border-radius:99px; padding:5px 12px; font-size:12px; font-weight:700; color:var(--gold); }
+  .hero { position:relative; border-radius:20px; overflow:hidden; margin-bottom:12px; border:1px solid var(--line); }
+  .hero img { width:100%; height:168px; object-fit:cover; display:block; }
+  .hero .overlay { position:absolute; left:0; right:0; bottom:0; padding:40px 14px 12px; background:linear-gradient(180deg, transparent, rgba(7,7,15,.92)); }
+  .hero h1 { font-size:24px; font-weight:800; }
+  .hero p { color:#c9c9e0; font-size:13px; margin-top:2px; }
+  .hero .tag { display:inline-block; margin-top:6px; background:rgba(168,85,247,.25); border:1px solid rgba(168,85,247,.6); color:#e9d5ff; font-size:11px; font-weight:700; padding:3px 9px; border-radius:99px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px; margin-bottom:12px; }
   .card h2 { font-size:15px; margin-bottom:8px; }
-  .big { font-size:26px; font-weight:700; color:var(--deep); }
   .muted { color:var(--muted); font-size:13px; }
-  .btn { display:block; width:100%; padding:12px; border:none; border-radius:14px; background:linear-gradient(135deg,var(--pink),var(--deep)); color:#fff; font-size:15px; font-weight:700; cursor:pointer; margin-top:10px; box-shadow:0 4px 12px rgba(233,30,99,.3); }
+  .big { font-size:30px; font-weight:800; color:var(--cyan); }
+  .big small { font-size:15px; color:var(--muted); font-weight:700; }
+  .farmcard { position:relative; overflow:hidden; border:1px solid var(--line); border-radius:18px; margin-bottom:12px; }
+  .farmcard .bg { position:absolute; inset:0; background:url('labubu-cosmic.jpg') center/cover; opacity:.55; }
+  .farmcard .inner { position:relative; padding:14px; background:linear-gradient(180deg, rgba(7,7,15,.25), rgba(7,7,15,.78)); }
+  .farmcard h2 { font-size:16px; }
+  .run { color:var(--green); font-size:13px; font-weight:700; }
+  .run::before { content:'● '; }
+  .accrued { font-size:28px; font-weight:800; color:var(--cyan); margin:6px 0 2px; }
+  .accrued small { font-size:14px; color:var(--muted); }
+  .btn { display:block; width:100%; padding:13px; border:none; border-radius:14px; background:linear-gradient(135deg,var(--violet),var(--cyan)); color:#fff; font-size:16px; font-weight:800; cursor:pointer; margin-top:10px; box-shadow:0 4px 16px rgba(168,85,247,.4); }
   .btn:disabled { opacity:.45; cursor:not-allowed; }
-  .btn.secondary { background:#fff; color:var(--deep); border:1px solid var(--line); box-shadow:none; }
-  .row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); }
+  .btn.secondary { background:var(--card2); color:var(--text); border:1px solid var(--line); box-shadow:none; }
+  .btn.pink { background:linear-gradient(135deg,var(--pink),var(--violet)); box-shadow:0 4px 16px rgba(255,92,138,.35); }
+  .stats { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:12px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 8px; text-align:center; }
+  .stat .lbl { font-size:11px; color:var(--muted); }
+  .stat .val { font-size:16px; font-weight:800; color:var(--cyan); margin-top:3px; }
+  .stat .val.gold { color:var(--gold); }
+  .stat .sub { font-size:10px; color:var(--muted); }
+  .levelrow { display:flex; align-items:center; gap:12px; }
+  .badge { width:52px; height:52px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #fde68a, #b45309); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; color:#fff; flex-shrink:0; border:2px solid #f5c518; }
+  .bar { height:8px; background:var(--line); border-radius:99px; overflow:hidden; margin:6px 0; }
+  .bar i { display:block; height:100%; background:linear-gradient(90deg,var(--pink),var(--violet)); border-radius:99px; }
+  .row { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); }
   .row:last-child { border-bottom:none; }
-  input { width:100%; padding:10px; border-radius:12px; border:1px solid var(--line); background:#fff; color:var(--text); font-size:14px; margin-top:6px; }
-  .mono { font-family:ui-monospace,Menlo,monospace; font-size:12px; word-break:break-all; background:#ffeef4; padding:8px; border-radius:8px; margin-top:6px; }
-  .pill { display:inline-block; padding:2px 8px; border-radius:99px; font-size:12px; background:#ffe3ee; color:var(--deep); }
-  .pill.ok { background:#dcfce7; color:#15803d; }
-  .pill.wait { background:#fef3c7; color:#92400e; }
+  .feat { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+  .feat .fcard { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:12px; cursor:pointer; position:relative; overflow:hidden; }
+  .feat .fcard img { width:100%; height:64px; object-fit:cover; border-radius:10px; margin-bottom:8px; }
+  .feat .fcard b { font-size:14px; }
+  .feat .fcard p { font-size:12px; color:var(--muted); margin-top:2px; }
+  input { width:100%; padding:11px; border-radius:12px; border:1px solid var(--line); background:#0d0d1d; color:var(--text); font-size:14px; margin-top:6px; }
+  .mono { font-family:ui-monospace,Menlo,monospace; font-size:12px; word-break:break-all; background:#0d0d1d; padding:8px; border-radius:8px; margin-top:6px; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:99px; font-size:12px; background:#262640; color:var(--text); }
+  .pill.ok { background:#14532d; color:#86efac; }
+  .pill.wait { background:#713f12; color:#fde68a; }
+  .count-badge { display:inline-block; min-width:22px; text-align:center; background:var(--pink); color:#fff; border-radius:99px; font-size:13px; font-weight:800; padding:2px 7px; }
   #err { color:var(--red); font-size:13px; text-align:center; margin:8px 0; }
-  .tabs { display:flex; gap:6px; margin-bottom:12px; }
-  .tabs button { flex:1; padding:9px 4px; border-radius:12px; border:1px solid var(--line); background:#fff; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer; }
-  .tabs button.active { background:linear-gradient(135deg,var(--pink),var(--deep)); color:#fff; border-color:transparent; }
+  .bottomnav { position:fixed; left:0; right:0; bottom:0; background:#0e0e1e; border-top:1px solid var(--line); display:flex; padding:6px 4px calc(8px + env(safe-area-inset-bottom)); z-index:10; }
+  .bottomnav button { flex:1; background:none; border:none; color:var(--muted); font-size:11px; font-weight:600; cursor:pointer; padding:4px 0; }
+  .bottomnav button .ic { font-size:20px; display:block; margin-bottom:2px; }
+  .bottomnav button.active { color:var(--pink); }
   .section { display:none; }
   .section.active { display:block; }
+  .timer { font-size:20px; font-weight:800; margin:6px 0; letter-spacing:1px; }
 </style>
 </head>
 <body>
-<div class="hero">
-  <img src="labubu-hero.jpg" alt="Labubu">
-  <h1>LABUBU <span>VERSE</span> ⛏️</h1>
-  <p class="sub">Mine • Hold • Earn</p>
-  <div class="rate">1 GRAM = 2.500 LABUBU</div>
+
+<div class="topbar">
+  <img class="logo" src="labubu-hero.jpg" alt="Labubu">
+  <div class="name">Labubu <span>Verse</span></div>
+  <div class="lvl-pill" id="topLevel">Lv.1</div>
 </div>
+
+<div class="hero">
+  <img src="labubu-cosmic.jpg" alt="Labubu Verse">
+  <div class="overlay">
+    <h1>LABUBU VERSE</h1>
+    <p>Official Web3 App</p>
+    <span class="tag">Mine · Hold · Earn</span>
+  </div>
+</div>
+
 <div id="err"></div>
 
-<div class="card">
-  <div class="muted">Saldo kamu (in-bot)</div>
-  <div class="big" id="balance">—</div>
-  <div class="muted" id="walletLine">Wallet belum terhubung</div>
-</div>
-
-<div class="tabs">
-  <button data-tab="farm" class="active">⛏️ Farm</button>
-  <button data-tab="tasks">🎁 Tugas</button>
-  <button data-tab="refs">👥 Referral</button>
-  <button data-tab="buy">🛒 Beli</button>
-  <button data-tab="hold">💎 Hold</button>
-  <button data-tab="wd">💸 Tarik</button>
-</div>
-
-<div class="section active" id="tab-farm">
+<!-- HOME -->
+<div class="section active" id="tab-home">
   <div class="card">
-    <h2>⛏️ Farming</h2>
-    <div id="farmState" class="muted">Memuat…</div>
-    <div id="farmTimer" style="font-size:20px;font-weight:700;margin:8px 0;"></div>
-    <button class="btn" id="farmBtn" onclick="farmStart()">Mulai Farming (8 jam)</button>
-    <button class="btn" id="claimBtn" onclick="farmClaim()" style="display:none">Klaim Hasil Farming</button>
-    <p class="muted" style="margin-top:8px">Rate dasar: 100 LABUBU/jam → 800 LABUBU per sesi 8 jam. Referrer kamu dapat 10% dari hasil farmingmu.</p>
+    <div class="muted">App Balance</div>
+    <div class="big"><span id="balance">—</span> <small>LABUBU</small></div>
+    <div class="muted" id="walletLine">Wallet belum terhubung</div>
   </div>
-</div>
 
-<div class="section" id="tab-tasks">
-  <div class="card">
-    <h2>🎁 Tugas Harian</h2>
-    <div id="taskList" class="muted">Memuat…</div>
+  <div class="farmcard">
+    <div class="bg"></div>
+    <div class="inner">
+      <h2>⛏️ Active Farming <span class="run" id="farmRun" style="display:none">Running</span></h2>
+      <div id="farmState" class="muted">Memuat…</div>
+      <div class="accrued" id="farmAccrued" style="display:none">+0 <small>LABUBU</small></div>
+      <div class="timer" id="farmTimer"></div>
+      <button class="btn" id="farmBtn" onclick="farmStart()">⚡ Mulai Farming (8 jam)</button>
+      <button class="btn" id="claimBtn" onclick="farmClaim()" style="display:none">⚡ Klaim Hasil Farming</button>
+      <p class="muted" style="margin-top:8px">Rate dasar: 100 LABUBU/jam → 800 LABUBU per sesi 8 jam. Referrer kamu dapat 10% dari hasil farmingmu.</p>
+    </div>
   </div>
-</div>
 
-<div class="section" id="tab-refs">
-  <div class="card">
-    <h2>👥 Referral</h2>
-    <div id="refInfo" class="muted">Memuat…</div>
-    <div class="mono" id="refLink"></div>
-    <button class="btn secondary" onclick="copyRef()">Salin Link Referral</button>
-    <p class="muted" style="margin-top:8px">Kamu dapat 10% dari LABUBU yang di-farming teman yang kamu undang.</p>
+  <div class="stats">
+    <div class="stat"><div class="lbl">⚡ Hourly</div><div class="val">100</div><div class="sub">LABUBU/h</div></div>
+    <div class="stat"><div class="lbl">📅 Daily</div><div class="val">800</div><div class="sub">LABUBU/day</div></div>
+    <div class="stat"><div class="lbl">🚀 Boost</div><div class="val gold">×1.00</div><div class="sub">multiplier</div></div>
+    <div class="stat"><div class="lbl">🛡️ League</div><div class="val gold" id="leagueName">Bronze</div><div class="sub" id="leagueLvl">Lv.1</div></div>
   </div>
-</div>
 
-<div class="section" id="tab-buy">
   <div class="card">
-    <h2>🛒 Beli LABUBU</h2>
-    <div id="buyInfo" class="muted">Memuat…</div>
-    <div id="buyDetail" style="display:none">
-      <p class="muted">Kirim GRAM ke alamat ini:</p>
-      <div class="mono" id="buyTreasury"></div>
-      <p class="muted" style="margin-top:8px">Memo (wajib diisi di kolom komentar transfer):</p>
-      <div class="mono" id="buyMemo"></div>
-      <button class="btn" onclick="buyPrepare()">Saya Sudah Siap — Buat Pesanan Beli</button>
-      <p class="muted" style="margin-top:8px">Setelah transfer, bot otomatis mengkredit LABUBU ke saldo kamu (biasanya beberapa menit). Minimal 0,1 GRAM.</p>
+    <div class="levelrow">
+      <div class="badge" id="levelBadge">Lv.1</div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between"><b id="levelTitle">Next Level: 2</b><span class="muted" id="levelCount">0 / 1.000 LABUBU</span></div>
+        <div class="bar"><i id="levelBar" style="width:0%"></i></div>
+        <div class="muted" id="levelHint">Kumpulkan 1.000 LABUBU untuk naik ke Level 2</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" onclick="openTab('tasks')" style="cursor:pointer">
+    <div class="row" style="border-bottom:none">
+      <div><b>🎯 Mission Center</b><br><span class="muted">Selesaikan misi dan undang teman untuk dapat LABUBU.</span></div>
+      <span class="count-badge" id="missionCount">–</span>
+    </div>
+  </div>
+
+  <div class="feat">
+    <div class="fcard" onclick="openTab('hold')">
+      <img src="labubu-cosmic.jpg" alt="Hold Station">
+      <b>💎 Hold Station</b>
+      <p>Hold LABUBU &amp; dapat bagian pool harian.</p>
+    </div>
+    <div class="fcard" onclick="openTab('buy')">
+      <img src="labubu-hero.jpg" alt="Buy LABUBU">
+      <b>🛒 Buy LABUBU</b>
+      <p>1 GRAM = 2.500 LABUBU. Min 0,1 GRAM.</p>
     </div>
   </div>
 </div>
 
+<!-- FARM -->
+<div class="section" id="tab-farm">
+  <div class="card">
+    <h2>⛏️ Farming</h2>
+    <div id="farmState2" class="muted">Buka tab Home untuk melihat progres farming.</div>
+    <button class="btn" onclick="openTab('home')">Lihat Farming di Home</button>
+    <p class="muted" style="margin-top:8px">Sesi farming 8 jam, 100 LABUBU/jam, klaim 800 LABUBU per sesi. Satu sesi aktif dalam satu waktu.</p>
+  </div>
+</div>
+
+<!-- HOLD -->
 <div class="section" id="tab-hold">
   <div class="card">
     <h2>💎 Hold-to-Earn</h2>
@@ -114,16 +170,60 @@
   </div>
 </div>
 
+<!-- BUY -->
+<div class="section" id="tab-buy">
+  <div class="card">
+    <h2>🛒 Beli LABUBU</h2>
+    <div id="buyInfo" class="muted">Memuat…</div>
+    <div id="buyDetail" style="display:none">
+      <p class="muted">Kirim GRAM ke alamat ini:</p>
+      <div class="mono" id="buyTreasury"></div>
+      <p class="muted" style="margin-top:8px">Memo (wajib diisi di kolom komentar transfer):</p>
+      <div class="mono" id="buyMemo"></div>
+      <button class="btn pink" onclick="buyPrepare()">Saya Sudah Siap — Buat Pesanan Beli</button>
+      <p class="muted" style="margin-top:8px">Setelah transfer, bot otomatis mengkredit LABUBU ke saldo kamu (biasanya beberapa menit). Minimal 0,1 GRAM.</p>
+    </div>
+  </div>
+</div>
+
+<!-- TASKS -->
+<div class="section" id="tab-tasks">
+  <div class="card">
+    <h2>🎯 Mission Center</h2>
+    <div id="taskList" class="muted">Memuat…</div>
+  </div>
+</div>
+
+<!-- FRIENDS -->
+<div class="section" id="tab-refs">
+  <div class="card">
+    <h2>👥 Referral</h2>
+    <div id="refInfo" class="muted">Memuat…</div>
+    <div class="mono" id="refLink"></div>
+    <button class="btn secondary" onclick="copyRef()">Salin Link Referral</button>
+    <p class="muted" style="margin-top:8px">Kamu dapat 10% dari LABUBU yang di-farming teman yang kamu undang.</p>
+  </div>
+</div>
+
+<!-- WALLET -->
 <div class="section" id="tab-wd">
   <div class="card">
     <h2>💸 Withdraw</h2>
     <input id="wdAddress" placeholder="Alamat TON tujuan (EQ... / UQ...)" />
     <input id="wdAmount" type="number" placeholder="Jumlah LABUBU (min 10.000)" />
-    <button class="btn" onclick="withdraw()">Ajukan Withdraw</button>
-    <p class="muted" style="margin-top:8px">v1: permintaan masuk antrean dan disetujui admin secara manual. Pengiriman Jetton otomatis menyusul di versi berikutnya.</p>
+    <button class="btn pink" onclick="withdraw()">Ajukan Withdraw</button>
+    <p class="muted" style="margin-top:8px">Minimal withdraw 10.000 LABUBU dan harus hold minimal 2.500 LABUBU di wallet on-chain. Permintaan masuk antrean dan disetujui admin secara manual.</p>
     <div id="wdList" style="margin-top:10px"></div>
   </div>
 </div>
+
+<nav class="bottomnav">
+  <button data-tab="home" class="active" onclick="openTab('home')"><span class="ic">🏠</span>Home</button>
+  <button data-tab="farm" onclick="openTab('farm')"><span class="ic">⛏️</span>Farm</button>
+  <button data-tab="hold" onclick="openTab('hold')"><span class="ic">💎</span>Hold</button>
+  <button data-tab="refs" onclick="openTab('refs')"><span class="ic">👥</span>Friends</button>
+  <button data-tab="wd" onclick="openTab('wd')"><span class="ic">💸</span>Wallet</button>
+</nav>
 
 <script>
 const tg = window.Telegram.WebApp;
@@ -142,25 +242,68 @@ async function api(path, opts){
   return data;
 }
 const fmt = n => Number(n||0).toLocaleString('id-ID');
-let farmEndsAt = 0, farmTimer = null;
+let farmEndsAt = 0, farmTimer = null, myBalance = 0;
+
+const LEVELS = [
+  { lvl:1, name:'Bronze',  need:0 },
+  { lvl:2, name:'Silver',  need:1000 },
+  { lvl:3, name:'Gold',    need:10000 },
+  { lvl:4, name:'Diamond', need:100000 },
+  { lvl:5, name:'Master',  need:1000000 },
+];
+function renderLevel(){
+  let cur = LEVELS[0], next = LEVELS[1];
+  for(let i=0;i<LEVELS.length;i++){ if(myBalance >= LEVELS[i].need){ cur = LEVELS[i]; next = LEVELS[i+1] || null; } }
+  document.getElementById('topLevel').textContent = 'Lv.' + cur.lvl;
+  document.getElementById('leagueName').textContent = cur.name;
+  document.getElementById('leagueLvl').textContent = 'Lv.' + cur.lvl;
+  document.getElementById('levelBadge').textContent = 'Lv.' + cur.lvl;
+  if(next){
+    const pct = Math.min(100, Math.floor((myBalance - cur.need) / (next.need - cur.need) * 100));
+    document.getElementById('levelTitle').textContent = 'Next Level: ' + next.lvl;
+    document.getElementById('levelCount').textContent = fmt(myBalance - cur.need) + ' / ' + fmt(next.need - cur.need) + ' LABUBU';
+    document.getElementById('levelBar').style.width = pct + '%';
+    document.getElementById('levelHint').textContent = 'Kumpulkan ' + fmt(next.need) + ' LABUBU untuk naik ke Level ' + next.lvl + ' (' + next.name + ')';
+  } else {
+    document.getElementById('levelTitle').textContent = 'Level Maksimal: ' + cur.lvl + ' ' + cur.name;
+    document.getElementById('levelCount').textContent = fmt(myBalance) + ' LABUBU';
+    document.getElementById('levelBar').style.width = '100%';
+    document.getElementById('levelHint').textContent = 'Kamu sudah di level tertinggi!';
+  }
+}
 
 async function loadMe(){
   try{
     const d = await api('/api/me');
-    document.getElementById('balance').textContent = fmt(d.user.balance) + ' LABUBU';
+    myBalance = Number(d.user.balance || 0);
+    document.getElementById('balance').textContent = fmt(myBalance);
     document.getElementById('walletLine').textContent = d.user.wallet_address ? 'Wallet: ' + d.user.wallet_address : 'Wallet belum terhubung';
+    renderLevel();
     const s = d.activeSession;
     const farmState = document.getElementById('farmState');
     const farmBtn = document.getElementById('farmBtn');
     const claimBtn = document.getElementById('claimBtn');
+    const farmRun = document.getElementById('farmRun');
+    const farmAccrued = document.getElementById('farmAccrued');
     if(s){
       farmEndsAt = s.ends_at;
-      farmState.textContent = s.claimable ? 'Sesi selesai — klaim hasil farmingmu!' : 'Sesi farming sedang berjalan.';
-      farmBtn.style.display = 'none';
-      claimBtn.style.display = s.claimable ? 'block' : 'none';
-      startTimer();
+      farmRun.style.display = 'inline';
+      farmAccrued.style.display = 'block';
+      if(s.claimable){
+        farmState.textContent = 'Sesi selesai — klaim hasil farmingmu!';
+        farmBtn.style.display = 'none';
+        claimBtn.style.display = 'block';
+        farmAccrued.innerHTML = '+800 <small>LABUBU</small>';
+      } else {
+        farmState.textContent = 'Sesi farming sedang berjalan.';
+        farmBtn.style.display = 'none';
+        claimBtn.style.display = 'none';
+        startTimer();
+      }
     } else {
       farmEndsAt = 0;
+      farmRun.style.display = 'none';
+      farmAccrued.style.display = 'none';
       farmState.textContent = 'Tidak ada sesi aktif.';
       farmBtn.style.display = 'block';
       claimBtn.style.display = 'none';
@@ -173,6 +316,10 @@ function startTimer(){
   const tick = () => {
     if(!farmEndsAt) return;
     const ms = farmEndsAt - Date.now();
+    const elapsedH = Math.max(0, (8*3600000 - ms) / 3600000);
+    const accrued = Math.min(800, Math.floor(elapsedH * 100));
+    const el = document.getElementById('farmAccrued');
+    if(el) el.innerHTML = '+' + fmt(accrued) + ' <small>LABUBU</small>';
     if(ms <= 0){ document.getElementById('farmTimer').textContent = 'Selesai!'; loadMe(); clearInterval(farmTimer); return; }
     const h = Math.floor(ms/3600000), m = Math.floor(ms%3600000/60000), s = Math.floor(ms%60000/1000);
     document.getElementById('farmTimer').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
@@ -190,6 +337,8 @@ async function farmClaim(){
 async function loadTasks(){
   try{
     const d = await api('/api/tasks');
+    const open = d.tasks.filter(t=>!t.done).length;
+    document.getElementById('missionCount').textContent = open;
     document.getElementById('taskList').innerHTML = d.tasks.map(t =>
       `<div class="row"><div><b>${t.title}</b><br><span class="muted">${t.description} — 🎁 ${fmt(t.reward)} LABUBU${t.kind==='referral'&&t.target?` (${t.progress||0}/${t.target})`:''}</span></div>` +
       (t.done ? `<span class="pill ok">Selesai</span>` : `<button class="btn secondary" style="width:auto;margin:0;padding:8px 14px" onclick="claimTask('${t.id}')">Klaim</button>`) + `</div>`
@@ -260,20 +409,19 @@ async function loadWithdraws(){
     ).join('') || '<p class="muted">Belum ada withdraw.</p>';
   }catch(e){ /* ignore */ }
 }
-document.querySelectorAll('.tabs button').forEach(b => {
-  b.addEventListener('click', () => {
-    document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    document.getElementById('tab-'+b.dataset.tab).classList.add('active');
-    if(b.dataset.tab==='tasks') loadTasks();
-    if(b.dataset.tab==='refs') loadRefs();
-    if(b.dataset.tab==='buy') loadBuy();
-    if(b.dataset.tab==='hold') loadHold();
-    if(b.dataset.tab==='wd') loadWithdraws();
-  });
-});
+function openTab(tab){
+  document.querySelectorAll('.bottomnav button').forEach(x=>x.classList.toggle('active', x.dataset.tab===tab));
+  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='tasks') loadTasks();
+  if(tab==='refs') loadRefs();
+  if(tab==='buy') loadBuy();
+  if(tab==='hold') loadHold();
+  if(tab==='wd') loadWithdraws();
+  window.scrollTo(0,0);
+}
 loadMe();
+loadTasks();
 </script>
 </body>
 </html>
