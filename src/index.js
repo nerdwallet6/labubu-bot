@@ -5,15 +5,13 @@
  * - Initializes the DB (importing db.js creates tables + seeds tasks).
  * - Starts the Express API + Mini App server.
  * - Starts the Telegram bot (polling) unless RUN_BOT=false.
- * - Starts the daily hold-to-earn tick (00:00 UTC) and the buy poller.
+ * - Starts the buy poller (manual sale: notifies the admin on GRAM receipt).
  */
 require('dotenv').config();
 const config = require('./config');
 require('./db'); // creates tables + seeds tasks
 const { createServer } = require('./server');
-const { dailyTick } = require('./hold');
 const { startBuyPoller } = require('./buy');
-const cron = require('node-cron');
 
 function main() {
   if (config.runBot && !config.botToken) {
@@ -44,11 +42,7 @@ function main() {
     console.log('[bot] RUN_BOT=false — bot polling disabled (API server only).');
   }
 
-  // Daily hold-to-earn: 00:00 UTC.
-  cron.schedule('0 0 * * *', () => {
-    dailyTick().catch((e) => console.error('[hold] tick error:', e.message));
-  });
-  console.log('[hold] daily tick scheduled at 00:00 UTC.');
+  // (No daily hold tick: Rifty-style levels pay via the mining rate itself.)
 
   startBuyPoller(bot);
 

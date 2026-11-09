@@ -106,15 +106,15 @@
       <div class="timer" id="farmTimer"></div>
       <button class="btn" id="farmBtn" onclick="farmStart()">⚡ Mulai Farming (8 jam)</button>
       <button class="btn" id="claimBtn" onclick="farmClaim()" style="display:none">⚡ Klaim Hasil Farming</button>
-      <p class="muted" style="margin-top:8px">Rate dasar Level 1 (gratis): 25 LABUBU/jam → 200 LABUBU per sesi 8 jam (600 LABUBU/hari). Referrer kamu dapat 10% dari hasil farmingmu.</p>
+      <p class="muted" style="margin-top:8px">Rate mining tergantung level kamu — level ditentukan dari jumlah LABUBU yang kamu hold di wallet. Lv.1 (hold 0) = 25/jam, Lv.20 (hold 75.411) = 334,4/jam. Sesi 8 jam. Referrer kamu dapat 10% dari hasil farmingmu.</p>
     </div>
   </div>
 
   <div class="stats">
-    <div class="stat"><div class="lbl">⚡ Hourly</div><div class="val">25</div><div class="sub">LABUBU/h</div></div>
-    <div class="stat"><div class="lbl">📅 Daily</div><div class="val">600</div><div class="sub">LABUBU/day</div></div>
+    <div class="stat"><div class="lbl">⚡ Hourly</div><div class="val" id="statHourly">25</div><div class="sub">LABUBU/h</div></div>
+    <div class="stat"><div class="lbl">📅 Daily</div><div class="val" id="statDaily">600</div><div class="sub">LABUBU/day</div></div>
     <div class="stat"><div class="lbl">🚀 Boost</div><div class="val gold">×1.00</div><div class="sub">multiplier</div></div>
-    <div class="stat"><div class="lbl">🛡️ League</div><div class="val gold" id="leagueName">Bronze</div><div class="sub" id="leagueLvl">Lv.1</div></div>
+    <div class="stat"><div class="lbl">🛡️ Level</div><div class="val gold" id="leagueName">Lv.1</div><div class="sub" id="leagueLvl">25/h</div></div>
   </div>
 
   <div class="card">
@@ -155,7 +155,7 @@
     <h2>⛏️ Farming</h2>
     <div id="farmState2" class="muted">Buka tab Home untuk melihat progres farming.</div>
     <button class="btn" onclick="openTab('home')">Lihat Farming di Home</button>
-    <p class="muted" style="margin-top:8px">Sesi farming 8 jam, 25 LABUBU/jam, klaim 200 LABUBU per sesi (600 LABUBU/hari di Level 1). Satu sesi aktif dalam satu waktu.</p>
+    <p class="muted" style="margin-top:8px">Sesi farming 8 jam. Rate-nya = rate level kamu saat sesi dimulai (dari jumlah LABUBU yang kamu hold di wallet). Satu sesi aktif dalam satu waktu.</p>
   </div>
 </div>
 
@@ -166,7 +166,11 @@
     <div id="holdInfo" class="muted">Memuat…</div>
     <input id="walletInput" placeholder="Alamat TON kamu (EQ... / UQ...)" />
     <button class="btn secondary" onclick="linkWallet()">Hubungkan Wallet</button>
-    <p class="muted" style="margin-top:8px">Tidak ada minimal hold — berapa pun LABUBU yang kamu hold di wallet ikut pembagian pool 1.000.000 LABUBU/hari. Besarnya bagianmu tergantung level dan jumlah hold: Lv.1 Bronze x1, Lv.2 Silver x2, Lv.3 Gold x3, Lv.4 Diamond x5, Lv.5 Master x10. Saldo dihitung dari nilai terendah awal &amp; akhir hari (anti-curang).</p>
+    <p class="muted" style="margin-top:8px">Level kamu ditentukan dari jumlah LABUBU yang kamu hold di wallet. Makin banyak hold, makin tinggi rate mining-mu. Contoh: hold 2.500 LABUBU = Level 5 (1.317/hari), hold 4.000 = Level 6 (1.602/hari).</p>
+  </div>
+  <div class="card">
+    <h2>📊 Tabel Level</h2>
+    <div id="levelTable"></div>
   </div>
 </div>
 
@@ -242,33 +246,57 @@ async function api(path, opts){
   return data;
 }
 const fmt = n => Number(n||0).toLocaleString('id-ID');
-let farmEndsAt = 0, farmTimer = null, myBalance = 0;
+let farmEndsAt = 0, farmTimer = null, myBalance = 0, myHold = 0, farmRate = 25;
 
+// Rifty-style levels: level is set by WALLET HOLD (on-chain LABUBU).
+// Same table as the server (config.miningLevels).
 const LEVELS = [
-  { lvl:1, name:'Bronze',  need:0,       mult:1 },
-  { lvl:2, name:'Silver',  need:1000,    mult:2 },
-  { lvl:3, name:'Gold',    need:10000,   mult:3 },
-  { lvl:4, name:'Diamond', need:100000,  mult:5 },
-  { lvl:5, name:'Master',  need:1000000, mult:10 },
+  { lvl:1,  hold:0,     perHour:25.0,  perDay:600 },
+  { lvl:2,  hold:116,   perHour:28.8,  perDay:690 },
+  { lvl:3,  hold:533,   perHour:35.6,  perDay:854 },
+  { lvl:4,  hold:1300,  perHour:44.4,  perDay:1066 },
+  { lvl:5,  hold:2447,  perHour:54.9,  perDay:1317 },
+  { lvl:6,  hold:3999,  perHour:66.8,  perDay:1602 },
+  { lvl:7,  hold:5972,  perHour:79.9,  perDay:1918 },
+  { lvl:8,  hold:8383,  perHour:94.2,  perDay:2260 },
+  { lvl:9,  hold:11245, perHour:109.5, perDay:2629 },
+  { lvl:10, hold:14572, perHour:125.9, perDay:3021 },
+  { lvl:11, hold:18373, perHour:143.1, perDay:3435 },
+  { lvl:12, hold:22659, perHour:161.3, perDay:3871 },
+  { lvl:13, hold:27440, perHour:180.3, perDay:4327 },
+  { lvl:14, hold:32723, perHour:200.1, perDay:4802 },
+  { lvl:15, hold:38518, perHour:220.7, perDay:5297 },
+  { lvl:16, hold:44831, perHour:242.0, perDay:5809 },
+  { lvl:17, hold:51671, perHour:264.1, perDay:6338 },
+  { lvl:18, hold:59043, perHour:286.8, perDay:6884 },
+  { lvl:19, hold:66954, perHour:310.3, perDay:7447 },
+  { lvl:20, hold:75411, perHour:334.4, perDay:8025 },
 ];
+function levelForHold(hold){
+  let cur = LEVELS[0];
+  for(let i=0;i<LEVELS.length;i++){ if(hold >= LEVELS[i].hold) cur = LEVELS[i]; }
+  return cur;
+}
 function renderLevel(){
-  let cur = LEVELS[0], next = LEVELS[1];
-  for(let i=0;i<LEVELS.length;i++){ if(myBalance >= LEVELS[i].need){ cur = LEVELS[i]; next = LEVELS[i+1] || null; } }
+  const cur = levelForHold(myHold);
+  const next = LEVELS.find(l => l.lvl === cur.lvl + 1) || null;
   document.getElementById('topLevel').textContent = 'Lv.' + cur.lvl;
-  document.getElementById('leagueName').textContent = cur.name;
-  document.getElementById('leagueLvl').textContent = 'Lv.' + cur.lvl;
+  document.getElementById('leagueName').textContent = 'Lv.' + cur.lvl;
+  document.getElementById('leagueLvl').textContent = cur.perHour + '/h';
   document.getElementById('levelBadge').textContent = 'Lv.' + cur.lvl;
+  document.getElementById('statHourly').textContent = cur.perHour;
+  document.getElementById('statDaily').textContent = fmt(cur.perDay);
   if(next){
-    const pct = Math.min(100, Math.floor((myBalance - cur.need) / (next.need - cur.need) * 100));
+    const pct = Math.min(100, Math.floor(myHold / next.hold * 100));
     document.getElementById('levelTitle').textContent = 'Next Level: ' + next.lvl;
-    document.getElementById('levelCount').textContent = fmt(myBalance - cur.need) + ' / ' + fmt(next.need - cur.need) + ' LABUBU';
+    document.getElementById('levelCount').textContent = fmt(myHold) + ' / ' + fmt(next.hold) + ' LABUBU';
     document.getElementById('levelBar').style.width = pct + '%';
-    document.getElementById('levelHint').textContent = 'Kumpulkan ' + fmt(next.need) + ' LABUBU untuk naik ke Level ' + next.lvl + ' (' + next.name + ') — Hold-to-Earn kamu sekarang x' + cur.mult;
+    document.getElementById('levelHint').textContent = 'Hold ' + fmt(next.hold) + ' LABUBU di wallet untuk naik ke Level ' + next.lvl + ' (' + next.perHour + '/jam)';
   } else {
-    document.getElementById('levelTitle').textContent = 'Level Maksimal: ' + cur.lvl + ' ' + cur.name;
-    document.getElementById('levelCount').textContent = fmt(myBalance) + ' LABUBU';
+    document.getElementById('levelTitle').textContent = 'Level Maksimal: ' + cur.lvl;
+    document.getElementById('levelCount').textContent = fmt(myHold) + ' LABUBU';
     document.getElementById('levelBar').style.width = '100%';
-    document.getElementById('levelHint').textContent = 'Kamu sudah di level tertinggi! Hold-to-Earn x' + cur.mult;
+    document.getElementById('levelHint').textContent = 'Kamu sudah di level tertinggi! Rate mining ' + cur.perHour + '/jam';
   }
 }
 
@@ -287,13 +315,14 @@ async function loadMe(){
     const farmAccrued = document.getElementById('farmAccrued');
     if(s){
       farmEndsAt = s.ends_at;
+      farmRate = Number(s.rate_per_hour || 25);
       farmRun.style.display = 'inline';
       farmAccrued.style.display = 'block';
       if(s.claimable){
         farmState.textContent = 'Sesi selesai — klaim hasil farmingmu!';
         farmBtn.style.display = 'none';
         claimBtn.style.display = 'block';
-        farmAccrued.innerHTML = '+200 <small>LABUBU</small>';
+        farmAccrued.innerHTML = '+' + fmt(Math.floor(farmRate * 8)) + ' <small>LABUBU</small>';
       } else {
         farmState.textContent = 'Sesi farming sedang berjalan.';
         farmBtn.style.display = 'none';
@@ -317,7 +346,7 @@ function startTimer(){
     if(!farmEndsAt) return;
     const ms = farmEndsAt - Date.now();
     const elapsedH = Math.max(0, (8*3600000 - ms) / 3600000);
-    const accrued = Math.min(200, Math.floor(elapsedH * 25));
+    const accrued = Math.min(farmRate * 8, Math.floor(elapsedH * farmRate));
     const el = document.getElementById('farmAccrued');
     if(el) el.innerHTML = '+' + fmt(accrued) + ' <small>LABUBU</small>';
     if(ms <= 0){ document.getElementById('farmTimer').textContent = 'Selesai!'; loadMe(); clearInterval(farmTimer); return; }
@@ -379,12 +408,21 @@ async function buyPrepare(){
 async function loadHold(){
   try{
     const d = await api('/api/hold/status');
+    myHold = Number(d.onchainBalance || 0);
+    renderLevel();
+    const cur = levelForHold(myHold);
     document.getElementById('holdInfo').innerHTML =
-      `Pool harian: <b>${fmt(d.dailyPool)} LABUBU</b><br>` +
-      `Sisa pool: <b>${fmt(d.poolRemaining)} LABUBU</b> (${d.daysUsed}/${d.daysTotal} hari)<br>` +
-      `Level kamu: <b>Lv.${d.level} ${d.levelName} — Hold x${d.holdMultiplier}</b><br>` +
-      `Saldo on-chain kamu: <b>${d.onchainBalance===null?'—':fmt(d.onchainBalance)+' LABUBU'}</b><br>` +
-      `Total reward hold kamu: <b>${fmt(d.totalEarned)} LABUBU</b>`;
+      `Level kamu: <b>Lv.${cur.lvl} — ${cur.perHour}/jam (${fmt(cur.perDay)}/hari)</b><br>` +
+      `Wallet hold: <b>${fmt(myHold)} LABUBU</b><br>` +
+      `Saldo on-chain kamu: <b>${d.onchainBalance===null?'—':fmt(d.onchainBalance)+' LABUBU'}</b>`;
+    document.getElementById('levelTable').innerHTML =
+      `<div class="row" style="font-weight:800"><span>Level</span><span>Wallet Hold</span><span>LABUBU/day</span></div>` +
+      LEVELS.map(l =>
+        `<div class="row" ${l.lvl===cur.lvl ? 'style="background:#f7f0e3;border-radius:10px;padding-left:8px;padding-right:8px"' : ''}>` +
+        `<span><b>${l.lvl===cur.lvl ? '👉 ' : ''}Lv.${l.lvl}</b></span>` +
+        `<span>${fmt(l.hold)} LABUBU</span>` +
+        `<span><b>${fmt(l.perDay)}</b> <span class="muted">${l.perHour}/h</span></span></div>`
+      ).join('');
     if(d.walletAddress) document.getElementById('walletInput').value = d.walletAddress;
   }catch(e){ showErr(e.message); }
 }
@@ -423,6 +461,7 @@ function openTab(tab){
 }
 loadMe();
 loadTasks();
+loadHold(); // sets the level (from wallet hold) for the topbar + stats
 </script>
 </body>
 </html>

@@ -9,7 +9,7 @@ const path = require('path');
 const config = require('./config');
 const { db, runTransaction, getUser, upsertUser, addBalance, toLabubu } = require('./db');
 const { validateInitData } = require('./auth');
-const { getHoldStatus } = require('./hold');
+const { levelForHold, nextLevel, miningLevels } = require('./hold');
 const { memoFor } = require('./buy');
 const { getJettonBalanceNano, isTonAddress } = require('./ton');
 
@@ -98,7 +98,9 @@ function createServer() {
   });
 
   // --- farming ---
-  app.post('/api/farm/start', requireUser, (req, res) => {
+  // Rifty-style: the session rate is the user's LEVEL rate, set by their
+  // wallet hold (on-chain LABUBU). No wallet / lookup fails = Lv1 (25/h).
+  app.post('/api/farm/start', requireUser, async (req, res) => {
     const existing = db
       .prepare(
         "SELECT * FROM farm_sessions WHERE user_id = ? AND claimed = 0 ORDER BY started_at DESC LIMIT 1"
@@ -107,19 +109,32 @@ function createServer() {
     if (existing) {
       return res.status(400).json({ ok: false, error: 'a farming session is already active' });
     }
+    const user = getUser(req.tgUser.id);
+    let holdLabubu = 0;
+    if (user.wallet_address) {
+      try {
+        const bal = await getJettonBalanceNano(user.wallet_address);
+        if (bal !== null) holdLabubu = bal / NANO;
+      } catch (e) {
+        console.log(`[farm] hold lookup failed for user ${req.tgUser.id}: ${e.message} — Lv1 rate.`);
+      }
+    }
+    const lvl = levelForHold(holdLabubu);
     const now = Date.now();
     const info = db
       .prepare(
         'INSERT INTO farm_sessions (user_id, started_at, ends_at, rate_per_hour) VALUES (?, ?, ?, ?)'
       )
-      .run(req.tgUser.id, now, now + config.farmDurationMs, config.farmRatePerHour);
+      .run(req.tgUser.id, now, now + config.farmDurationMs, lvl.perHour);
     res.json({
       ok: true,
       session: {
         id: info.lastInsertRowid,
         started_at: now,
         ends_at: now + config.farmDurationMs,
-        rate_per_hour: config.farmRatePerHour,
+        rate_per_hour: lvl.perHour,
+        level: lvl.level,
+        perDay: lvl.perDay,
       },
     });
   });
@@ -317,9 +332,8 @@ function createServer() {
     res.json({ ok: true, memo, treasuryAddress: config.treasuryAddress, rate: config.saleRate });
   });
 
-  // --- hold-to-earn ---
+  // --- hold / levels (Rifty-style: level from wallet hold) ---
   app.get('/api/hold/status', requireUser, async (req, res) => {
-    const status = getHoldStatus(req.tgUser.id);
     const user = getUser(req.tgUser.id);
     let onchain = null;
     if (user.wallet_address) {
@@ -329,23 +343,19 @@ function createServer() {
         onchain = null;
       }
     }
+    const holdLabubu = onchain === null ? 0 : onchain / NANO;
+    const lvl = levelForHold(holdLabubu);
+    const next = nextLevel(lvl.level);
     res.json({
       ok: true,
       walletAddress: user.wallet_address,
       onchainBalance: onchain === null ? null : toLabubu(onchain),
-      dailyPool: status.dailyPool,
-      poolRemaining: status.poolRemaining,
-      daysUsed: status.daysUsed,
-      daysTotal: status.daysTotal,
-      minBalance: status.minBalance,
-      level: status.level,
-      levelName: status.levelName,
-      holdMultiplier: status.holdMultiplier,
-      levels: status.levels,
-      totalEarned: toLabubu(status.totalEarnedNano),
-      lastSnapshot: status.lastSnapshot
-        ? { day: status.lastSnapshot.day, reward: toLabubu(status.lastSnapshot.reward_nano || 0) }
-        : null,
+      hold: holdLabubu,
+      level: lvl.level,
+      perHour: lvl.perHour,
+      perDay: lvl.perDay,
+      nextLevel: next,
+      levels: miningLevels,
     });
   });
 

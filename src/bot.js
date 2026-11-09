@@ -87,9 +87,8 @@ function createBot() {
         `/balance — your in-bot LABUBU balance\n` +
         `/buy — how to buy LABUBU with GRAM\n` +
         `/help — this message\n\n` +
-        `Mining: start an 8h farming session in the Mini App (25 LABUBU/hour, Level 1 free = 600/day), claim when it ends.\n` +
+        `Mining: start an 8h farming session in the Mini App. Your rate depends on your LEVEL — set by how much LABUBU you hold in your TON wallet. Lv1 (hold 0) = 25/h, Lv5 (hold 2,447) = 54.9/h, Lv20 (hold 75,411) = 334.4/h. Claim when the session ends.\n` +
         `Referrals: 10% of what your friends farm goes to you.\n` +
-        `Hold-to-earn: hold any LABUBU in your TON wallet — your daily share depends on your level (Lv1 x1, Lv2 x2, Lv3 x3, Lv4 x5, Lv5 x10). No minimum hold.\n` +
         `Withdraw: request in the Mini App; the admin approves manually in v1.`
     );
   });
