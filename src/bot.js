@@ -58,7 +58,7 @@ function createBot() {
     await ctx.reply(
       `💰 Your LABUBU balance: ${toLabubu(user.balance_nano).toLocaleString()} LABUBU\n` +
         `Wallet: ${user.wallet_address || 'not linked — set it in the Mini App'}\n\n` +
-        `Withdraw with the Mini App (minimum ${config.withdrawMin.toLocaleString()} LABUBU, and you must hold at least ${config.withdrawMinHold.toLocaleString()} LABUBU on-chain).`
+        `Withdraw with the Mini App (minimum ${config.withdrawMin.toLocaleString()} LABUBU — you must keep ${config.withdrawHoldRate * 100}% of the amount in your balance, e.g. withdrawing 10,000 needs 12,500 balance).`
     );
   });
 
@@ -87,7 +87,7 @@ function createBot() {
         `/balance — your in-bot LABUBU balance\n` +
         `/buy — how to buy LABUBU with GRAM\n` +
         `/help — this message\n\n` +
-        `Mining: start an 8h farming session in the Mini App (100 LABUBU/hour), claim when it ends.\n` +
+        `Mining: start an 8h farming session in the Mini App (25 LABUBU/hour, Level 1 free = 600/day), claim when it ends.\n` +
         `Referrals: 10% of what your friends farm goes to you.\n` +
         `Hold-to-earn: hold 1,000,000+ LABUBU in your TON wallet to share 1,000,000 LABUBU/day.\n` +
         `Withdraw: request in the Mini App; the admin approves manually in v1.`

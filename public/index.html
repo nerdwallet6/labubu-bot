@@ -106,13 +106,13 @@
       <div class="timer" id="farmTimer"></div>
       <button class="btn" id="farmBtn" onclick="farmStart()">⚡ Mulai Farming (8 jam)</button>
       <button class="btn" id="claimBtn" onclick="farmClaim()" style="display:none">⚡ Klaim Hasil Farming</button>
-      <p class="muted" style="margin-top:8px">Rate dasar: 100 LABUBU/jam → 800 LABUBU per sesi 8 jam. Referrer kamu dapat 10% dari hasil farmingmu.</p>
+      <p class="muted" style="margin-top:8px">Rate dasar Level 1 (gratis): 25 LABUBU/jam → 200 LABUBU per sesi 8 jam (600 LABUBU/hari). Referrer kamu dapat 10% dari hasil farmingmu.</p>
     </div>
   </div>
 
   <div class="stats">
-    <div class="stat"><div class="lbl">⚡ Hourly</div><div class="val">100</div><div class="sub">LABUBU/h</div></div>
-    <div class="stat"><div class="lbl">📅 Daily</div><div class="val">800</div><div class="sub">LABUBU/day</div></div>
+    <div class="stat"><div class="lbl">⚡ Hourly</div><div class="val">25</div><div class="sub">LABUBU/h</div></div>
+    <div class="stat"><div class="lbl">📅 Daily</div><div class="val">600</div><div class="sub">LABUBU/day</div></div>
     <div class="stat"><div class="lbl">🚀 Boost</div><div class="val gold">×1.00</div><div class="sub">multiplier</div></div>
     <div class="stat"><div class="lbl">🛡️ League</div><div class="val gold" id="leagueName">Bronze</div><div class="sub" id="leagueLvl">Lv.1</div></div>
   </div>
@@ -155,7 +155,7 @@
     <h2>⛏️ Farming</h2>
     <div id="farmState2" class="muted">Buka tab Home untuk melihat progres farming.</div>
     <button class="btn" onclick="openTab('home')">Lihat Farming di Home</button>
-    <p class="muted" style="margin-top:8px">Sesi farming 8 jam, 100 LABUBU/jam, klaim 800 LABUBU per sesi. Satu sesi aktif dalam satu waktu.</p>
+    <p class="muted" style="margin-top:8px">Sesi farming 8 jam, 25 LABUBU/jam, klaim 200 LABUBU per sesi (600 LABUBU/hari di Level 1). Satu sesi aktif dalam satu waktu.</p>
   </div>
 </div>
 
@@ -212,7 +212,7 @@
     <input id="wdAddress" placeholder="Alamat TON tujuan (EQ... / UQ...)" />
     <input id="wdAmount" type="number" placeholder="Jumlah LABUBU (min 10.000)" />
     <button class="btn pink" onclick="withdraw()">Ajukan Withdraw</button>
-    <p class="muted" style="margin-top:8px">Minimal withdraw 10.000 LABUBU dan harus hold minimal 2.500 LABUBU di wallet on-chain. Permintaan masuk antrean dan disetujui admin secara manual.</p>
+    <p class="muted" style="margin-top:8px">Minimal withdraw 10.000 LABUBU. Kamu harus menyisakan 25% dari jumlah withdraw di saldo (contoh: withdraw 10.000 butuh saldo 12.500). Permintaan masuk antrean dan disetujui admin secara manual.</p>
     <div id="wdList" style="margin-top:10px"></div>
   </div>
 </div>
@@ -293,7 +293,7 @@ async function loadMe(){
         farmState.textContent = 'Sesi selesai — klaim hasil farmingmu!';
         farmBtn.style.display = 'none';
         claimBtn.style.display = 'block';
-        farmAccrued.innerHTML = '+800 <small>LABUBU</small>';
+        farmAccrued.innerHTML = '+200 <small>LABUBU</small>';
       } else {
         farmState.textContent = 'Sesi farming sedang berjalan.';
         farmBtn.style.display = 'none';
@@ -317,7 +317,7 @@ function startTimer(){
     if(!farmEndsAt) return;
     const ms = farmEndsAt - Date.now();
     const elapsedH = Math.max(0, (8*3600000 - ms) / 3600000);
-    const accrued = Math.min(800, Math.floor(elapsedH * 100));
+    const accrued = Math.min(200, Math.floor(elapsedH * 25));
     const el = document.getElementById('farmAccrued');
     if(el) el.innerHTML = '+' + fmt(accrued) + ' <small>LABUBU</small>';
     if(ms <= 0){ document.getElementById('farmTimer').textContent = 'Selesai!'; loadMe(); clearInterval(farmTimer); return; }

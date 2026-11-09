@@ -374,28 +374,13 @@ function createServer() {
     if (amountNano > user.balance_nano) {
       return res.status(400).json({ ok: false, error: 'insufficient balance' });
     }
-    // Must hold at least withdrawMinHold LABUBU on-chain (linked wallet).
-    if (!user.wallet_address) {
+    // Must keep 25% of the withdrawal amount in the account balance:
+    // withdraw 10,000 needs balance >= 12,500 (2,500 stays as hold).
+    const holdNano = Math.floor(amountNano * config.withdrawHoldRate);
+    if (user.balance_nano < amountNano + holdNano) {
       return res.status(400).json({
         ok: false,
-        error: `link a TON wallet holding at least ${config.withdrawMinHold.toLocaleString()} LABUBU first`,
-      });
-    }
-    let heldNano = null;
-    try {
-      heldNano = await getJettonBalanceNano(user.wallet_address);
-    } catch {
-      heldNano = null;
-    }
-    if (heldNano === null) {
-      return res
-        .status(400)
-        .json({ ok: false, error: 'could not verify on-chain LABUBU balance, try again' });
-    }
-    if (heldNano < config.withdrawMinHold * NANO) {
-      return res.status(400).json({
-        ok: false,
-        error: `you must hold at least ${config.withdrawMinHold.toLocaleString()} LABUBU on-chain to withdraw (you hold ${(heldNano / NANO).toLocaleString()} LABUBU)`,
+        error: `you must keep ${config.withdrawHoldRate * 100}% of the withdrawal (${(holdNano / NANO).toLocaleString()} LABUBU) in your balance — withdrawing ${amount.toLocaleString()} LABUBU needs at least ${((amountNano + holdNano) / NANO).toLocaleString()} LABUBU balance`,
       });
     }
     const info = runTransaction(() => {

@@ -44,7 +44,7 @@ const config = {
 
   // --- Farming ---
   farmDurationMs: 8 * 60 * 60 * 1000, // 8 hours per session
-  farmRatePerHour: 100, // LABUBU per hour (base rate)
+  farmRatePerHour: 25, // LABUBU per hour, Level 1 (free) = 600/day (25 x 24h); 200 per 8h session
   referralRate: 0.10, // referrer earns 10% of referred friend's farmed amount
 
   // --- Hold-to-earn ---
@@ -60,7 +60,9 @@ const config = {
 
   // --- Withdraw ---
   withdrawMin: 10_000, // minimum withdrawal, LABUBU
-  withdrawMinHold: 2_500, // must hold this much LABUBU on-chain (linked wallet) to withdraw
+  // Must keep 25% of the withdrawal amount in the account balance:
+  // withdraw 10,000 needs balance >= 12,500 (2,500 stays as hold).
+  withdrawHoldRate: 0.25,
 
   // --- TonAPI (public, no key) ---
   tonApiBase: 'https://tonapi.io/v2',
