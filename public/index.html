@@ -6,47 +6,47 @@
 <title>LABUBU Verse Mining</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-  :root { --bg:#07070f; --card:#15152a; --card2:#1c1c36; --line:#262640; --pink:#ff5c8a; --violet:#a855f7; --cyan:#22d3ee; --gold:#f5c518; --green:#22c55e; --red:#ef4444; --text:#f1f1f8; --muted:#8b8ba3; }
+  :root { --bg:#faf5ec; --card:#ffffff; --card2:#f7f0e3; --line:#e8dcc8; --brown:#8b5e3c; --brown2:#a67c52; --deep:#6b4423; --gold:#b45309; --green:#15803d; --red:#dc2626; --text:#3d2c1e; --muted:#9a8266; }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { background:radial-gradient(120% 60% at 50% 0%, #1a1033 0%, var(--bg) 60%); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; padding:12px 12px 84px; min-height:100vh; }
+  body { background:linear-gradient(180deg,#f7efdd 0%,#faf5ec 40%,#fdfaf3 100%); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; padding:12px 12px 84px; min-height:100vh; }
   .topbar { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
-  .topbar img.logo { width:38px; height:38px; border-radius:50%; border:2px solid var(--pink); object-fit:cover; }
+  .topbar img.logo { width:38px; height:38px; border-radius:50%; border:2px solid var(--brown); object-fit:cover; }
   .topbar .name { font-size:19px; font-weight:800; flex:1; }
-  .topbar .name span { color:var(--pink); }
-  .lvl-pill { background:var(--card); border:1px solid var(--line); border-radius:99px; padding:5px 12px; font-size:12px; font-weight:700; color:var(--gold); }
+  .topbar .name span { color:var(--brown); }
+  .lvl-pill { background:#fff; border:1px solid var(--line); border-radius:99px; padding:5px 12px; font-size:12px; font-weight:700; color:var(--gold); }
   .hero { position:relative; border-radius:20px; overflow:hidden; margin-bottom:12px; border:1px solid var(--line); }
   .hero img { width:100%; height:168px; object-fit:cover; display:block; }
-  .hero .overlay { position:absolute; left:0; right:0; bottom:0; padding:40px 14px 12px; background:linear-gradient(180deg, transparent, rgba(7,7,15,.92)); }
-  .hero h1 { font-size:24px; font-weight:800; }
-  .hero p { color:#c9c9e0; font-size:13px; margin-top:2px; }
-  .hero .tag { display:inline-block; margin-top:6px; background:rgba(168,85,247,.25); border:1px solid rgba(168,85,247,.6); color:#e9d5ff; font-size:11px; font-weight:700; padding:3px 9px; border-radius:99px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px; margin-bottom:12px; }
+  .hero .overlay { position:absolute; left:0; right:0; bottom:0; padding:40px 14px 12px; background:linear-gradient(180deg, transparent, rgba(250,245,236,.94)); }
+  .hero h1 { font-size:24px; font-weight:800; color:var(--text); }
+  .hero p { color:#7a6248; font-size:13px; margin-top:2px; }
+  .hero .tag { display:inline-block; margin-top:6px; background:rgba(139,94,60,.12); border:1px solid rgba(139,94,60,.4); color:var(--deep); font-size:11px; font-weight:700; padding:3px 9px; border-radius:99px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px; margin-bottom:12px; box-shadow:0 2px 10px rgba(107,68,35,.06); }
   .card h2 { font-size:15px; margin-bottom:8px; }
   .muted { color:var(--muted); font-size:13px; }
-  .big { font-size:30px; font-weight:800; color:var(--cyan); }
+  .big { font-size:30px; font-weight:800; color:var(--deep); }
   .big small { font-size:15px; color:var(--muted); font-weight:700; }
   .farmcard { position:relative; overflow:hidden; border:1px solid var(--line); border-radius:18px; margin-bottom:12px; }
-  .farmcard .bg { position:absolute; inset:0; background:url('labubu-cosmic.jpg') center/cover; opacity:.55; }
-  .farmcard .inner { position:relative; padding:14px; background:linear-gradient(180deg, rgba(7,7,15,.25), rgba(7,7,15,.78)); }
+  .farmcard .bg { position:absolute; inset:0; background:url('labubu-brown.jpg') center/cover; opacity:.5; }
+  .farmcard .inner { position:relative; padding:14px; background:linear-gradient(180deg, rgba(250,245,236,.35), rgba(250,245,236,.88)); }
   .farmcard h2 { font-size:16px; }
   .run { color:var(--green); font-size:13px; font-weight:700; }
   .run::before { content:'● '; }
-  .accrued { font-size:28px; font-weight:800; color:var(--cyan); margin:6px 0 2px; }
+  .accrued { font-size:28px; font-weight:800; color:var(--deep); margin:6px 0 2px; }
   .accrued small { font-size:14px; color:var(--muted); }
-  .btn { display:block; width:100%; padding:13px; border:none; border-radius:14px; background:linear-gradient(135deg,var(--violet),var(--cyan)); color:#fff; font-size:16px; font-weight:800; cursor:pointer; margin-top:10px; box-shadow:0 4px 16px rgba(168,85,247,.4); }
+  .btn { display:block; width:100%; padding:13px; border:none; border-radius:14px; background:linear-gradient(135deg,var(--brown2),var(--deep)); color:#fff; font-size:16px; font-weight:800; cursor:pointer; margin-top:10px; box-shadow:0 4px 14px rgba(107,68,35,.3); }
   .btn:disabled { opacity:.45; cursor:not-allowed; }
-  .btn.secondary { background:var(--card2); color:var(--text); border:1px solid var(--line); box-shadow:none; }
-  .btn.pink { background:linear-gradient(135deg,var(--pink),var(--violet)); box-shadow:0 4px 16px rgba(255,92,138,.35); }
+  .btn.secondary { background:#fff; color:var(--deep); border:1px solid var(--line); box-shadow:none; }
+  .btn.pink { background:linear-gradient(135deg,var(--brown2),var(--deep)); box-shadow:0 4px 14px rgba(107,68,35,.3); }
   .stats { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:12px; }
   .stat { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 8px; text-align:center; }
   .stat .lbl { font-size:11px; color:var(--muted); }
-  .stat .val { font-size:16px; font-weight:800; color:var(--cyan); margin-top:3px; }
+  .stat .val { font-size:16px; font-weight:800; color:var(--deep); margin-top:3px; }
   .stat .val.gold { color:var(--gold); }
   .stat .sub { font-size:10px; color:var(--muted); }
   .levelrow { display:flex; align-items:center; gap:12px; }
-  .badge { width:52px; height:52px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #fde68a, #b45309); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; color:#fff; flex-shrink:0; border:2px solid #f5c518; }
+  .badge { width:52px; height:52px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #fde68a, #b45309); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; color:#fff; flex-shrink:0; border:2px solid #d97706; }
   .bar { height:8px; background:var(--line); border-radius:99px; overflow:hidden; margin:6px 0; }
-  .bar i { display:block; height:100%; background:linear-gradient(90deg,var(--pink),var(--violet)); border-radius:99px; }
+  .bar i { display:block; height:100%; background:linear-gradient(90deg,var(--brown2),var(--deep)); border-radius:99px; }
   .row { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); }
   .row:last-child { border-bottom:none; }
   .feat { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
@@ -54,17 +54,17 @@
   .feat .fcard img { width:100%; height:64px; object-fit:cover; border-radius:10px; margin-bottom:8px; }
   .feat .fcard b { font-size:14px; }
   .feat .fcard p { font-size:12px; color:var(--muted); margin-top:2px; }
-  input { width:100%; padding:11px; border-radius:12px; border:1px solid var(--line); background:#0d0d1d; color:var(--text); font-size:14px; margin-top:6px; }
-  .mono { font-family:ui-monospace,Menlo,monospace; font-size:12px; word-break:break-all; background:#0d0d1d; padding:8px; border-radius:8px; margin-top:6px; }
-  .pill { display:inline-block; padding:2px 8px; border-radius:99px; font-size:12px; background:#262640; color:var(--text); }
-  .pill.ok { background:#14532d; color:#86efac; }
-  .pill.wait { background:#713f12; color:#fde68a; }
-  .count-badge { display:inline-block; min-width:22px; text-align:center; background:var(--pink); color:#fff; border-radius:99px; font-size:13px; font-weight:800; padding:2px 7px; }
+  input { width:100%; padding:11px; border-radius:12px; border:1px solid var(--line); background:#fff; color:var(--text); font-size:14px; margin-top:6px; }
+  .mono { font-family:ui-monospace,Menlo,monospace; font-size:12px; word-break:break-all; background:#f7f0e3; padding:8px; border-radius:8px; margin-top:6px; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:99px; font-size:12px; background:#f0e6d4; color:var(--deep); }
+  .pill.ok { background:#dcfce7; color:#15803d; }
+  .pill.wait { background:#fef3c7; color:#92400e; }
+  .count-badge { display:inline-block; min-width:22px; text-align:center; background:var(--brown); color:#fff; border-radius:99px; font-size:13px; font-weight:800; padding:2px 7px; }
   #err { color:var(--red); font-size:13px; text-align:center; margin:8px 0; }
-  .bottomnav { position:fixed; left:0; right:0; bottom:0; background:#0e0e1e; border-top:1px solid var(--line); display:flex; padding:6px 4px calc(8px + env(safe-area-inset-bottom)); z-index:10; }
+  .bottomnav { position:fixed; left:0; right:0; bottom:0; background:#fffdf8; border-top:1px solid var(--line); display:flex; padding:6px 4px calc(8px + env(safe-area-inset-bottom)); z-index:10; }
   .bottomnav button { flex:1; background:none; border:none; color:var(--muted); font-size:11px; font-weight:600; cursor:pointer; padding:4px 0; }
   .bottomnav button .ic { font-size:20px; display:block; margin-bottom:2px; }
-  .bottomnav button.active { color:var(--pink); }
+  .bottomnav button.active { color:var(--deep); }
   .section { display:none; }
   .section.active { display:block; }
   .timer { font-size:20px; font-weight:800; margin:6px 0; letter-spacing:1px; }
@@ -79,7 +79,7 @@
 </div>
 
 <div class="hero">
-  <img src="labubu-cosmic.jpg" alt="Labubu Verse">
+  <img src="labubu-brown.jpg" alt="Labubu Verse">
   <div class="overlay">
     <h1>LABUBU VERSE</h1>
     <p>Official Web3 App</p>
@@ -137,7 +137,7 @@
 
   <div class="feat">
     <div class="fcard" onclick="openTab('hold')">
-      <img src="labubu-cosmic.jpg" alt="Hold Station">
+      <img src="labubu-brown.jpg" alt="Hold Station">
       <b>💎 Hold Station</b>
       <p>Hold LABUBU &amp; dapat bagian pool harian.</p>
     </div>
