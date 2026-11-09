@@ -17,6 +17,24 @@
  */
 const config = require('./config');
 
+// Tier names for the level table (5 tiers x 20 levels):
+// BRONZE 1-20, SILVER 21-40, GOLD 41-60, PLATINUM 61-80, ULTIMATE 81-100.
+const TIERS = [
+  { name: 'BRONZE', emoji: '🥉', from: 1, to: 20 },
+  { name: 'SILVER', emoji: '🥈', from: 21, to: 40 },
+  { name: 'GOLD', emoji: '🥇', from: 41, to: 60 },
+  { name: 'PLATINUM', emoji: '💎', from: 61, to: 80 },
+  { name: 'ULTIMATE', emoji: '👑', from: 81, to: 100 },
+];
+
+// Tier row for a level number (1-100). Returns the tier object.
+function tierForLevel(level) {
+  for (const t of TIERS) {
+    if (level >= t.from && level <= t.to) return t;
+  }
+  return TIERS[TIERS.length - 1];
+}
+
 // Level row for a wallet hold (in whole LABUBU). Returns the highest level
 // whose hold requirement is met.
 function levelForHold(holdLabubu) {
@@ -32,4 +50,4 @@ function nextLevel(level) {
   return config.miningLevels.find((l) => l.level === level + 1) || null;
 }
 
-module.exports = { levelForHold, nextLevel, miningLevels: config.miningLevels };
+module.exports = { levelForHold, nextLevel, tierForLevel, TIERS, miningLevels: config.miningLevels };

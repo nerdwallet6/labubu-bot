@@ -106,7 +106,7 @@
       <div class="timer" id="farmTimer"></div>
       <button class="btn" id="farmBtn" onclick="farmStart()">⚡ Mulai Farming (8 jam)</button>
       <button class="btn" id="claimBtn" onclick="farmClaim()" style="display:none">⚡ Klaim Hasil Farming</button>
-      <p class="muted" style="margin-top:8px">Rate mining tergantung level kamu — level ditentukan dari jumlah LABUBU yang kamu hold di wallet. Lv.1 (hold 0) = 25/jam, Lv.100 (hold 2.848.238) = 3.704,8/jam. Sesi 8 jam. Referrer kamu dapat 10% dari hasil farmingmu.</p>
+      <p class="muted" style="margin-top:8px">Rate mining tergantung level kamu — level ditentukan dari jumlah LABUBU yang kamu hold di wallet. 5 tier: 🥉 BRONZE Lv.1–20, 🥈 SILVER Lv.21–40, 🥇 GOLD Lv.41–60, 💎 PLATINUM Lv.61–80, 👑 ULTIMATE Lv.81–100. Lv.1 (hold 0) = 25/jam, Lv.100 (hold 2.848.238) = 3.704,8/jam. Sesi 8 jam. Referrer kamu dapat 10% dari hasil farmingmu.</p>
     </div>
   </div>
 
@@ -146,16 +146,6 @@
       <b>🛒 Buy LABUBU</b>
       <p>1 GRAM = 2.500 LABUBU. Min 0,1 GRAM.</p>
     </div>
-  </div>
-</div>
-
-<!-- FARM -->
-<div class="section" id="tab-farm">
-  <div class="card">
-    <h2>⛏️ Farming</h2>
-    <div id="farmState2" class="muted">Buka tab Home untuk melihat progres farming.</div>
-    <button class="btn" onclick="openTab('home')">Lihat Farming di Home</button>
-    <p class="muted" style="margin-top:8px">Sesi farming 8 jam. Rate-nya = rate level kamu saat sesi dimulai (dari jumlah LABUBU yang kamu hold di wallet). Satu sesi aktif dalam satu waktu.</p>
   </div>
 </div>
 
@@ -223,7 +213,7 @@
 
 <nav class="bottomnav">
   <button data-tab="home" class="active" onclick="openTab('home')"><span class="ic">🏠</span>Home</button>
-  <button data-tab="farm" onclick="openTab('farm')"><span class="ic">⛏️</span>Farm</button>
+  <button data-tab="buy" onclick="openTab('buy')"><span class="ic">🛒</span>Buy LABUBU</button>
   <button data-tab="hold" onclick="openTab('hold')"><span class="ic">💎</span>Hold</button>
   <button data-tab="refs" onclick="openTab('refs')"><span class="ic">👥</span>Friends</button>
   <button data-tab="wd" onclick="openTab('wd')"><span class="ic">💸</span>Wallet</button>
@@ -352,6 +342,18 @@ const LEVELS = [
   { lvl:99, hold:2785327, perHour:3649.3, perDay:87582 },
   { lvl:100, hold:2848238, perHour:3704.8, perDay:88916 },
 ];
+// Tier names for the level table (5 tiers x 20 levels).
+const TIERS = [
+  { name:'BRONZE', emoji:'🥉', from:1, to:20, bg:'#f3e3d3', fg:'#6b4423' },
+  { name:'SILVER', emoji:'🥈', from:21, to:40, bg:'#eceff1', fg:'#4b5563' },
+  { name:'GOLD', emoji:'🥇', from:41, to:60, bg:'#fdf3d7', fg:'#8a6d00' },
+  { name:'PLATINUM', emoji:'💎', from:61, to:80, bg:'#e3ecf5', fg:'#3d5a80' },
+  { name:'ULTIMATE', emoji:'👑', from:81, to:100, bg:'#efe7fd', fg:'#5b21b6' },
+];
+function tierForLevel(lvl){
+  for(let i=0;i<TIERS.length;i++){ if(lvl >= TIERS[i].from && lvl <= TIERS[i].to) return TIERS[i]; }
+  return TIERS[TIERS.length-1];
+}
 function levelForHold(hold){
   let cur = LEVELS[0];
   for(let i=0;i<LEVELS.length;i++){ if(hold >= LEVELS[i].hold) cur = LEVELS[i]; }
@@ -359,21 +361,23 @@ function levelForHold(hold){
 }
 function renderLevel(){
   const cur = levelForHold(myHold);
+  const tier = tierForLevel(cur.lvl);
   const next = LEVELS.find(l => l.lvl === cur.lvl + 1) || null;
   document.getElementById('topLevel').textContent = 'Lv.' + cur.lvl;
-  document.getElementById('leagueName').textContent = 'Lv.' + cur.lvl;
-  document.getElementById('leagueLvl').textContent = cur.perHour + '/h';
+  document.getElementById('leagueName').textContent = tier.emoji + ' ' + tier.name;
+  document.getElementById('leagueLvl').textContent = 'Lv.' + cur.lvl + ' · ' + cur.perHour + '/h';
   document.getElementById('levelBadge').textContent = 'Lv.' + cur.lvl;
   document.getElementById('statHourly').textContent = cur.perHour;
   document.getElementById('statDaily').textContent = fmt(cur.perDay);
   if(next){
+    const nextTier = tierForLevel(next.lvl);
     const pct = Math.min(100, Math.floor(myHold / next.hold * 100));
-    document.getElementById('levelTitle').textContent = 'Next Level: ' + next.lvl;
+    document.getElementById('levelTitle').textContent = 'Next Level: ' + next.lvl + (nextTier.name !== tier.name ? ' · ' + nextTier.emoji + ' ' + nextTier.name : '');
     document.getElementById('levelCount').textContent = fmt(myHold) + ' / ' + fmt(next.hold) + ' LABUBU';
     document.getElementById('levelBar').style.width = pct + '%';
     document.getElementById('levelHint').textContent = 'Hold ' + fmt(next.hold) + ' LABUBU di wallet untuk naik ke Level ' + next.lvl + ' (' + next.perHour + '/jam)';
   } else {
-    document.getElementById('levelTitle').textContent = 'Level Maksimal: ' + cur.lvl;
+    document.getElementById('levelTitle').textContent = 'Level Maksimal: ' + cur.lvl + ' · ' + tier.emoji + ' ' + tier.name;
     document.getElementById('levelCount').textContent = fmt(myHold) + ' LABUBU';
     document.getElementById('levelBar').style.width = '100%';
     document.getElementById('levelHint').textContent = 'Kamu sudah di level tertinggi! Rate mining ' + cur.perHour + '/jam';
@@ -491,18 +495,25 @@ async function loadHold(){
     myHold = Number(d.onchainBalance || 0);
     renderLevel();
     const cur = levelForHold(myHold);
+    const curTier = tierForLevel(cur.lvl);
     document.getElementById('holdInfo').innerHTML =
-      `Level kamu: <b>Lv.${cur.lvl} — ${cur.perHour}/jam (${fmt(cur.perDay)}/hari)</b><br>` +
+      `Level kamu: <b>Lv.${cur.lvl} · ${curTier.emoji} ${curTier.name} — ${cur.perHour}/jam (${fmt(cur.perDay)}/hari)</b><br>` +
       `Wallet hold: <b>${fmt(myHold)} LABUBU</b><br>` +
       `Saldo on-chain kamu: <b>${d.onchainBalance===null?'—':fmt(d.onchainBalance)+' LABUBU'}</b>`;
-    document.getElementById('levelTable').innerHTML =
-      `<div class="row" style="font-weight:800"><span>Level</span><span>Wallet Hold</span><span>LABUBU/day</span></div>` +
-      LEVELS.map(l =>
-        `<div class="row" ${l.lvl===cur.lvl ? 'style="background:#f7f0e3;border-radius:10px;padding-left:8px;padding-right:8px"' : ''}>` +
+    let rows = `<div class="row" style="font-weight:800"><span>Level</span><span>Wallet Hold</span><span>LABUBU/day</span></div>`;
+    let lastTier = null;
+    for(const l of LEVELS){
+      const t = tierForLevel(l.lvl);
+      if(!lastTier || t.name !== lastTier.name){
+        rows += `<div class="row" style="justify-content:center;background:${t.bg};color:${t.fg};border-radius:10px;font-weight:800;margin:6px 0"><span>${t.emoji} ${t.name} · Level ${t.from}–${t.to}</span></div>`;
+        lastTier = t;
+      }
+      rows += `<div class="row" ${l.lvl===cur.lvl ? 'style="background:#f7f0e3;border-radius:10px;padding-left:8px;padding-right:8px"' : ''}>` +
         `<span><b>${l.lvl===cur.lvl ? '👉 ' : ''}Lv.${l.lvl}</b></span>` +
         `<span>${fmt(l.hold)} LABUBU</span>` +
-        `<span><b>${fmt(l.perDay)}</b> <span class="muted">${l.perHour}/h</span></span></div>`
-      ).join('');
+        `<span><b>${fmt(l.perDay)}</b> <span class="muted">${l.perHour}/h</span></span></div>`;
+    }
+    document.getElementById('levelTable').innerHTML = rows;
     if(d.walletAddress) document.getElementById('walletInput').value = d.walletAddress;
   }catch(e){ showErr(e.message); }
 }

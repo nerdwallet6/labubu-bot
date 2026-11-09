@@ -9,7 +9,7 @@ const path = require('path');
 const config = require('./config');
 const { db, runTransaction, getUser, upsertUser, addBalance, toLabubu } = require('./db');
 const { validateInitData } = require('./auth');
-const { levelForHold, nextLevel, miningLevels } = require('./hold');
+const { levelForHold, nextLevel, tierForLevel, miningLevels } = require('./hold');
 const { memoFor } = require('./buy');
 const { getJettonBalanceNano, isTonAddress } = require('./ton');
 
@@ -352,10 +352,11 @@ function createServer() {
       onchainBalance: onchain === null ? null : toLabubu(onchain),
       hold: holdLabubu,
       level: lvl.level,
+      tier: tierForLevel(lvl.level).name,
       perHour: lvl.perHour,
       perDay: lvl.perDay,
-      nextLevel: next,
-      levels: miningLevels,
+      nextLevel: next ? { ...next, tier: tierForLevel(next.level).name } : null,
+      levels: miningLevels.map((l) => ({ ...l, tier: tierForLevel(l.level).name })),
     });
   });
 
