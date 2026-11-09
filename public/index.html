@@ -69,6 +69,13 @@
   .announce b { color:#7a5b00; font-size:15px; display:block; margin-bottom:2px; }
   .announce span { color:#6b5a1e; font-size:13px; }
   .announce .btn { margin-top:8px; }
+  .tierrow { display:flex; gap:6px; margin-bottom:10px; }
+  .tiercard { flex:1; text-align:center; padding:10px 2px 8px; border:1.5px solid var(--line); border-radius:12px; background:#fff; cursor:pointer; }
+  .tiercard .emoji { font-size:24px; display:block; }
+  .tiercard .tname { font-size:10px; font-weight:800; color:var(--deep); display:block; margin-top:2px; }
+  .tiercard .trange { font-size:10px; color:var(--muted); display:block; }
+  .tiercard .you { font-size:9px; font-weight:800; color:var(--gold); display:block; }
+  .tiercard.active { border-color:var(--brown); background:#f7f0e3; box-shadow:0 2px 8px rgba(107,68,35,.15); }
   .section { display:none; }
   .section.active { display:block; }
   .timer { font-size:20px; font-weight:800; margin:6px 0; letter-spacing:1px; }
@@ -169,6 +176,7 @@
   </div>
   <div class="card">
     <h2>📊 Level Table</h2>
+    <div class="muted" style="margin-bottom:8px">Tap a tier to see its levels.</div>
     <div id="levelTable"></div>
   </div>
 </div>
@@ -505,9 +513,33 @@ async function buyPrepare(){
   try{ const d = await api('/api/buy/prepare',{method:'POST'}); tg.showAlert('Order created. Send GRAM with memo: ' + d.memo); }
   catch(e){ showErr(e.message); }
 }
+let holdData = null, selectedTier = null;
+function selectTier(name){ selectedTier = name; renderLevelTable(); }
+function renderLevelTable(){
+  if(!holdData) return;
+  const cur = levelForHold(myHold);
+  const curTier = tierForLevel(cur.lvl);
+  if(!selectedTier) selectedTier = curTier.name;
+  let cards = `<div class="tierrow">` + TIERS.map(t => {
+    const isCur = t.name === curTier.name;
+    const isSel = t.name === selectedTier;
+    return `<div class="tiercard${isSel ? ' active' : ''}" onclick="selectTier('${t.name}')">` +
+      `<span class="emoji">${t.emoji}</span><span class="tname">${t.name}</span><span class="trange">${t.from}–${t.to}</span>` +
+      (isCur ? `<span class="you">★ YOU</span>` : '') + `</div>`;
+  }).join('') + `</div>`;
+  let rows = cards + `<div class="row" style="font-weight:800"><span>Level</span><span>Wallet Hold</span><span>LABUBU/day</span></div>`;
+  for(const l of LEVELS.filter(l => tierForLevel(l.lvl).name === selectedTier)){
+    rows += `<div class="row" ${l.lvl===cur.lvl ? 'style="background:#f7f0e3;border-radius:10px;padding-left:8px;padding-right:8px"' : ''}>` +
+      `<span><b>${l.lvl===cur.lvl ? '👉 ' : ''}Lv.${l.lvl}</b></span>` +
+      `<span>${fmt(l.hold)} LABUBU</span>` +
+      `<span><b>${fmt(l.perDay)}</b> <span class="muted">${l.perHour}/h</span></span></div>`;
+  }
+  document.getElementById('levelTable').innerHTML = rows;
+}
 async function loadHold(){
   try{
     const d = await api('/api/hold/status');
+    holdData = d;
     myHold = Number(d.onchainBalance || 0);
     renderLevel();
     const cur = levelForHold(myHold);
@@ -516,20 +548,7 @@ async function loadHold(){
       `Your level: <b>Lv.${cur.lvl} · ${curTier.emoji} ${curTier.name} — ${cur.perHour}/h (${fmt(cur.perDay)}/day)</b><br>` +
       `Wallet hold: <b>${fmt(myHold)} LABUBU</b><br>` +
       `Your on-chain balance: <b>${d.onchainBalance===null?'—':fmt(d.onchainBalance)+' LABUBU'}</b>`;
-    let rows = `<div class="row" style="font-weight:800"><span>Level</span><span>Wallet Hold</span><span>LABUBU/day</span></div>`;
-    let lastTier = null;
-    for(const l of LEVELS){
-      const t = tierForLevel(l.lvl);
-      if(!lastTier || t.name !== lastTier.name){
-        rows += `<div class="row" style="justify-content:center;background:${t.bg};color:${t.fg};border-radius:10px;font-weight:800;margin:6px 0"><span>${t.emoji} ${t.name} · Level ${t.from}–${t.to}</span></div>`;
-        lastTier = t;
-      }
-      rows += `<div class="row" ${l.lvl===cur.lvl ? 'style="background:#f7f0e3;border-radius:10px;padding-left:8px;padding-right:8px"' : ''}>` +
-        `<span><b>${l.lvl===cur.lvl ? '👉 ' : ''}Lv.${l.lvl}</b></span>` +
-        `<span>${fmt(l.hold)} LABUBU</span>` +
-        `<span><b>${fmt(l.perDay)}</b> <span class="muted">${l.perHour}/h</span></span></div>`;
-    }
-    document.getElementById('levelTable').innerHTML = rows;
+    renderLevelTable();
     if(d.walletAddress) document.getElementById('walletInput').value = d.walletAddress;
   }catch(e){ showErr(e.message); }
 }
