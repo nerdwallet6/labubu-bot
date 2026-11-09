@@ -622,7 +622,11 @@ function buildWheel(){
     const [x1, y1] = polar(cx, cy, r, a1);
     svg += `<path d="M ${cx} ${cy} L ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)} Z" fill="${s.bg}" stroke="#fff" stroke-width="1.5"/>`;
     const [tx, ty] = polar(cx, cy, r - 36, a0 + seg / 2);
-    svg += `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" fill="${s.fg}" font-size="13" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${(a0 + seg / 2).toFixed(1)} ${cx} ${cy})">${s.label}</text>`;
+    // Rotate the label around ITS OWN position (tx,ty), not the wheel
+    // center — rotating around the center moved it to the wrong segment
+    // (angle doubled) and made labels overlap. Tangential: the label at
+    // the pointer ends up upright after the wheel stops.
+    svg += `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" fill="${s.fg}" font-size="13" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${(a0 + seg / 2).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)})">${s.label}</text>`;
   });
   svg += `</svg>`;
   document.getElementById('wheel').innerHTML = svg;
