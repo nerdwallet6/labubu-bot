@@ -142,18 +142,24 @@ const seedTasks = [
   },
   {
     id: 'hold1m',
-    title: 'Hold 1,000,000 LABUBU',
-    description: 'Hold at least 1,000,000 LABUBU in your TON wallet to qualify for hold-to-earn.',
+    title: 'Hold LABUBU di wallet',
+    description: 'Hubungkan wallet TON kamu dan hold LABUBU (jumlah berapa pun) untuk klaim bonus ini.',
     reward_nano: 1000 * config.NANO,
     kind: 'hold',
     url: null,
-    target: 1_000_000,
+    target: 1, // any on-chain LABUBU balance >= 1 qualifies (no minimum hold)
   },
 ];
 const insertTask = db.prepare(`
   INSERT INTO tasks (id, title, description, reward_nano, kind, url, target)
   VALUES (@id, @title, @description, @reward_nano, @kind, @url, @target)
-  ON CONFLICT(id) DO NOTHING
+  ON CONFLICT(id) DO UPDATE SET
+    title = excluded.title,
+    description = excluded.description,
+    reward_nano = excluded.reward_nano,
+    kind = excluded.kind,
+    url = excluded.url,
+    target = excluded.target
 `);
 for (const t of seedTasks) insertTask.run(t);
 

@@ -338,6 +338,10 @@ function createServer() {
       daysUsed: status.daysUsed,
       daysTotal: status.daysTotal,
       minBalance: status.minBalance,
+      level: status.level,
+      levelName: status.levelName,
+      holdMultiplier: status.holdMultiplier,
+      levels: status.levels,
       totalEarned: toLabubu(status.totalEarnedNano),
       lastSnapshot: status.lastSnapshot
         ? { day: status.lastSnapshot.day, reward: toLabubu(status.lastSnapshot.reward_nano || 0) }

@@ -1,13 +1,17 @@
 /**
- * hold.js — daily hold-to-earn distribution.
+ * hold.js — daily hold-to-earn distribution (LEVEL-BASED, like Rifty).
  *
  * Model (owner decisions, see README):
  * - Fixed daily pool: 1,000,000 LABUBU/day, from the 200M pool over 200 days.
- * - Eligibility: on-chain LABUBU balance >= 1,000,000 LABUBU.
+ * - NO minimum hold: any on-chain LABUBU balance > 0 earns a share.
+ * - Each LEVEL earns at a different rate: the pool is split proportionally
+ *   by weight = min(start,end) on-chain balance x the holder's level
+ *   multiplier (Lv1 Bronze x1, Lv2 Silver x2, Lv3 Gold x3, Lv4 Diamond x5,
+ *   Lv5 Master x10). Level is based on in-bot balance (same LEVELS as the
+ *   Mini App). Higher level = bigger share per LABUBU held.
  * - Anti-gaming: the balance must be held for the FULL 24h window. We read
  *   the balance at the start of the day and again at the end, and use the
  *   MINIMUM of the two. Buying just before the snapshot does not help.
- * - The daily pool is split proportionally by qualifying users' min balances.
  * - Rewards are credited to in-bot balances (withdrawable later via /withdraw).
  *
  * Runs once a day at 00:00 UTC (see index.js): first distribute yesterday
@@ -19,6 +23,16 @@ const config = require('./config');
 const { getJettonBalanceNano } = require('./ton');
 
 const NANO = config.NANO;
+
+// Level for an in-bot balance (in whole LABUBU). Returns the level object
+// { level, name, minBalance, multiplier } from config.holdLevels.
+function levelForBalance(balanceLabubu) {
+  let cur = config.holdLevels[0];
+  for (const l of config.holdLevels) {
+    if (balanceLabubu >= l.minBalance) cur = l;
+  }
+  return cur;
+}
 
 function todayUtc() {
   return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
@@ -49,7 +63,7 @@ async function distributeDay(day) {
 
   const rows = db
     .prepare(
-      `SELECT hs.*, u.wallet_address FROM hold_snapshots hs
+      `SELECT hs.*, u.wallet_address, u.balance_nano FROM hold_snapshots hs
        JOIN users u ON u.telegram_id = hs.user_id
        WHERE hs.day = ? AND hs.balance_start IS NOT NULL AND u.wallet_address IS NOT NULL`
     )
@@ -60,7 +74,8 @@ async function distributeDay(day) {
     return { distributed: false, reason: 'no snapshots' };
   }
 
-  // Read end-of-day balances, compute min(start, end).
+  // Read end-of-day balances, compute min(start, end) and the holder's
+  // level-weighted share. No minimum hold: any balance > 0 earns.
   const eligible = [];
   for (const row of rows) {
     let end = null;
@@ -73,8 +88,9 @@ async function distributeDay(day) {
     db.prepare(
       'UPDATE hold_snapshots SET balance_end = ?, balance_min = ? WHERE id = ?'
     ).run(end, min, row.id);
-    if (min >= config.holdMinBalance * NANO) {
-      eligible.push({ user_id: row.user_id, snapshot_id: row.id, min });
+    if (min > 0) {
+      const lvl = levelForBalance(row.balance_nano / NANO);
+      eligible.push({ user_id: row.user_id, snapshot_id: row.id, min, weight: min * lvl.multiplier, level: lvl.level });
     }
   }
 
@@ -83,12 +99,12 @@ async function distributeDay(day) {
     return { distributed: false, reason: 'no eligible holders' };
   }
 
-  const totalMin = eligible.reduce((s, e) => s + e.min, 0);
+  const totalWeight = eligible.reduce((s, e) => s + e.weight, 0);
   const poolNano = config.holdDailyPool * NANO;
   let distributedNano = 0;
   runTransaction(() => {
     for (const e of eligible) {
-      const share = Math.floor((poolNano * e.min) / totalMin);
+      const share = Math.floor((poolNano * e.weight) / totalWeight);
       if (share <= 0) continue;
       addBalance(e.user_id, share);
       db.prepare(
@@ -152,15 +168,21 @@ function getHoldStatus(userId) {
   const totalEarned = db
     .prepare('SELECT COALESCE(SUM(reward_nano), 0) AS s FROM hold_snapshots WHERE user_id = ?')
     .get(userId).s;
+  const user = db.prepare('SELECT balance_nano FROM users WHERE telegram_id = ?').get(userId);
+  const lvl = levelForBalance(user ? user.balance_nano / NANO : 0);
   return {
     dailyPool: config.holdDailyPool,
     poolRemaining,
     daysUsed,
     daysTotal: 200,
-    minBalance: config.holdMinBalance,
+    minBalance: 0, // no minimum hold — any balance > 0 earns
+    level: lvl.level,
+    levelName: lvl.name,
+    holdMultiplier: lvl.multiplier,
+    levels: config.holdLevels,
     lastSnapshot: last || null,
     totalEarnedNano: totalEarned,
   };
 }
 
-module.exports = { dailyTick, distributeDay, snapshotDay, getHoldStatus, todayUtc };
+module.exports = { dailyTick, distributeDay, snapshotDay, getHoldStatus, todayUtc, levelForBalance };

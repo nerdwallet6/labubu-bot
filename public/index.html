@@ -166,7 +166,7 @@
     <div id="holdInfo" class="muted">Memuat…</div>
     <input id="walletInput" placeholder="Alamat TON kamu (EQ... / UQ...)" />
     <button class="btn secondary" onclick="linkWallet()">Hubungkan Wallet</button>
-    <p class="muted" style="margin-top:8px">Hold minimal 1.000.000 LABUBU di wallet selama 24 jam penuh untuk ikut pembagian 1.000.000 LABUBU/hari, dibagi proporsional. Saldo dihitung dari nilai terendah awal &amp; akhir hari (anti-curang).</p>
+    <p class="muted" style="margin-top:8px">Tidak ada minimal hold — berapa pun LABUBU yang kamu hold di wallet ikut pembagian pool 1.000.000 LABUBU/hari. Besarnya bagianmu tergantung level dan jumlah hold: Lv.1 Bronze x1, Lv.2 Silver x2, Lv.3 Gold x3, Lv.4 Diamond x5, Lv.5 Master x10. Saldo dihitung dari nilai terendah awal &amp; akhir hari (anti-curang).</p>
   </div>
 </div>
 
@@ -245,11 +245,11 @@ const fmt = n => Number(n||0).toLocaleString('id-ID');
 let farmEndsAt = 0, farmTimer = null, myBalance = 0;
 
 const LEVELS = [
-  { lvl:1, name:'Bronze',  need:0 },
-  { lvl:2, name:'Silver',  need:1000 },
-  { lvl:3, name:'Gold',    need:10000 },
-  { lvl:4, name:'Diamond', need:100000 },
-  { lvl:5, name:'Master',  need:1000000 },
+  { lvl:1, name:'Bronze',  need:0,       mult:1 },
+  { lvl:2, name:'Silver',  need:1000,    mult:2 },
+  { lvl:3, name:'Gold',    need:10000,   mult:3 },
+  { lvl:4, name:'Diamond', need:100000,  mult:5 },
+  { lvl:5, name:'Master',  need:1000000, mult:10 },
 ];
 function renderLevel(){
   let cur = LEVELS[0], next = LEVELS[1];
@@ -263,12 +263,12 @@ function renderLevel(){
     document.getElementById('levelTitle').textContent = 'Next Level: ' + next.lvl;
     document.getElementById('levelCount').textContent = fmt(myBalance - cur.need) + ' / ' + fmt(next.need - cur.need) + ' LABUBU';
     document.getElementById('levelBar').style.width = pct + '%';
-    document.getElementById('levelHint').textContent = 'Kumpulkan ' + fmt(next.need) + ' LABUBU untuk naik ke Level ' + next.lvl + ' (' + next.name + ')';
+    document.getElementById('levelHint').textContent = 'Kumpulkan ' + fmt(next.need) + ' LABUBU untuk naik ke Level ' + next.lvl + ' (' + next.name + ') — Hold-to-Earn kamu sekarang x' + cur.mult;
   } else {
     document.getElementById('levelTitle').textContent = 'Level Maksimal: ' + cur.lvl + ' ' + cur.name;
     document.getElementById('levelCount').textContent = fmt(myBalance) + ' LABUBU';
     document.getElementById('levelBar').style.width = '100%';
-    document.getElementById('levelHint').textContent = 'Kamu sudah di level tertinggi!';
+    document.getElementById('levelHint').textContent = 'Kamu sudah di level tertinggi! Hold-to-Earn x' + cur.mult;
   }
 }
 
@@ -382,6 +382,7 @@ async function loadHold(){
     document.getElementById('holdInfo').innerHTML =
       `Pool harian: <b>${fmt(d.dailyPool)} LABUBU</b><br>` +
       `Sisa pool: <b>${fmt(d.poolRemaining)} LABUBU</b> (${d.daysUsed}/${d.daysTotal} hari)<br>` +
+      `Level kamu: <b>Lv.${d.level} ${d.levelName} — Hold x${d.holdMultiplier}</b><br>` +
       `Saldo on-chain kamu: <b>${d.onchainBalance===null?'—':fmt(d.onchainBalance)+' LABUBU'}</b><br>` +
       `Total reward hold kamu: <b>${fmt(d.totalEarned)} LABUBU</b>`;
     if(d.walletAddress) document.getElementById('walletInput').value = d.walletAddress;

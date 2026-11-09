@@ -47,11 +47,22 @@ const config = {
   farmRatePerHour: 25, // LABUBU per hour, Level 1 (free) = 600/day (25 x 24h); 200 per 8h session
   referralRate: 0.10, // referrer earns 10% of referred friend's farmed amount
 
-  // --- Hold-to-earn ---
+  // --- Hold-to-earn (LEVEL-BASED, like Rifty) ---
   // Fixed daily pool: 1,000,000 LABUBU/day from the 200M pool over 200 days.
+  // NO minimum hold: any on-chain LABUBU balance > 0 earns a share.
+  // The pool is split proportionally by weight = min(start,end) balance
+  // x the holder's LEVEL multiplier. Level is based on in-bot balance
+  // (same LEVELS as the Mini App): Bronze 0, Silver 1,000, Gold 10,000,
+  // Diamond 100,000, Master 1,000,000.
   holdDailyPool: 1_000_000, // LABUBU per day
   holdPoolTotal: 200_000_000, // LABUBU total for hold-to-earn
-  holdMinBalance: 1_000_000, // minimum LABUBU held to qualify
+  holdLevels: [
+    { level: 1, name: 'Bronze', minBalance: 0, multiplier: 1 },
+    { level: 2, name: 'Silver', minBalance: 1_000, multiplier: 2 },
+    { level: 3, name: 'Gold', minBalance: 10_000, multiplier: 3 },
+    { level: 4, name: 'Diamond', minBalance: 100_000, multiplier: 5 },
+    { level: 5, name: 'Master', minBalance: 1_000_000, multiplier: 10 },
+  ],
   // Distribution runs daily at 00:00 UTC: distribute yesterday (min of
   // start/end balance), then snapshot today's start balances.
 
