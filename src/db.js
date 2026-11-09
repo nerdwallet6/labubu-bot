@@ -45,7 +45,8 @@ CREATE TABLE IF NOT EXISTS farm_sessions (
   rate_per_hour INTEGER NOT NULL,
   claimed      INTEGER NOT NULL DEFAULT 0,
   claimed_at    INTEGER,
-  reward_nano   INTEGER
+  reward_nano   INTEGER,
+  last_claim_at INTEGER -- ms timestamp of the last (partial) claim; NULL = started_at
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
@@ -144,6 +145,15 @@ CREATE TABLE IF NOT EXISTS withdrawals (
   decided_by  INTEGER
 );
 `);
+
+// Migration: farm_sessions.last_claim_at (partial claims, 24h sessions).
+// No-op on fresh DBs (column is in CREATE TABLE) and on DBs that already
+// have it (SQLite throws "duplicate column name").
+try {
+  db.prepare('ALTER TABLE farm_sessions ADD COLUMN last_claim_at INTEGER').run();
+} catch {
+  /* already exists */
+}
 
 // --- Seed default tasks (idempotent) ---
 const seedTasks = [

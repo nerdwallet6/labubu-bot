@@ -124,9 +124,9 @@
       <div id="farmState" class="muted">Loading…</div>
       <div class="accrued" id="farmAccrued" style="display:none">+0 <small>LABUBU</small></div>
       <div class="timer" id="farmTimer"></div>
-      <button class="btn" id="farmBtn" onclick="farmStart()">⚡ Start Farming (8h)</button>
-      <button class="btn" id="claimBtn" onclick="farmClaim()" style="display:none">⚡ Claim Farming Rewards</button>
-      <p class="muted" style="margin-top:8px">Your mining rate depends on your level — your level is set by how much LABUBU you hold in your wallet. 5 tiers: 🥉 BRONZE Lv.1–20, 🥈 SILVER Lv.21–40, 🥇 GOLD Lv.41–60, 💎 PLATINUM Lv.61–80, 👑 ULTIMATE Lv.81–100. Lv.1 (hold 0) = 25/h, Lv.100 (hold 2,848,238) = 3,704.8/h. 8h sessions. Your referrer earns 10% of your farmed amount.</p>
+      <button class="btn" id="farmBtn" onclick="farmStart()">⚡ Start Farming (24h)</button>
+      <button class="btn" id="claimBtn" onclick="farmClaim()" style="display:none">⚡ Claim LABUBU</button>
+      <p class="muted" style="margin-top:8px">Your mining rate depends on your level — your level is set by how much LABUBU you hold in your wallet. 5 tiers: 🥉 BRONZE Lv.1–20, 🥈 SILVER Lv.21–40, 🥇 GOLD Lv.41–60, 💎 PLATINUM Lv.61–80, 👑 ULTIMATE Lv.81–100. Lv.1 (hold 0) = 25/h, Lv.100 (hold 2,848,238) = 3,704.8/h. One start = 24h of auto-mining. Claim your mined LABUBU anytime — it goes straight to your balance. Your referrer earns 10% of your farmed amount.</p>
     </div>
   </div>
 
@@ -274,7 +274,7 @@ async function api(path, opts){
   return data;
 }
 const fmt = n => Number(n||0).toLocaleString('en-US');
-let farmEndsAt = 0, farmTimer = null, myBalance = 0, myHold = 0, farmRate = 25;
+let farmEndsAt = 0, farmTimer = null, myBalance = 0, myHold = 0, farmRate = 25, lastClaimAt = 0;
 
 // Rifty-style levels: level is set by WALLET HOLD (on-chain LABUBU).
 // Same table as the server (config.miningLevels).
@@ -438,21 +438,23 @@ async function loadMe(){
     if(s){
       farmEndsAt = s.ends_at;
       farmRate = Number(s.rate_per_hour || 25);
+      lastClaimAt = s.last_claim_at || s.started_at;
       farmRun.style.display = 'inline';
       farmAccrued.style.display = 'block';
-      if(s.claimable){
+      farmAccrued.innerHTML = '+' + fmt(s.unclaimed || 0) + ' <small>LABUBU</small>';
+      farmBtn.style.display = 'none';
+      if(s.ended){
         farmState.textContent = 'Session finished — claim your farming rewards!';
-        farmBtn.style.display = 'none';
-        claimBtn.style.display = 'block';
-        farmAccrued.innerHTML = '+' + fmt(Math.floor(farmRate * 8)) + ' <small>LABUBU</small>';
+        claimBtn.style.display = s.unclaimed > 0 ? 'block' : 'none';
+        document.getElementById('farmTimer').textContent = '';
       } else {
-        farmState.textContent = 'Farming session is running.';
-        farmBtn.style.display = 'none';
-        claimBtn.style.display = 'none';
+        farmState.textContent = 'Mining is running — claim anytime!';
+        claimBtn.style.display = s.unclaimed > 0 ? 'block' : 'none';
         startTimer();
       }
     } else {
       farmEndsAt = 0;
+      lastClaimAt = 0;
       farmRun.style.display = 'none';
       farmAccrued.style.display = 'none';
       farmState.textContent = 'No active session.';
@@ -467,11 +469,13 @@ function startTimer(){
   const tick = () => {
     if(!farmEndsAt) return;
     const ms = farmEndsAt - Date.now();
-    const elapsedH = Math.max(0, (8*3600000 - ms) / 3600000);
-    const accrued = Math.min(farmRate * 8, Math.floor(elapsedH * farmRate));
     const el = document.getElementById('farmAccrued');
-    if(el) el.innerHTML = '+' + fmt(accrued) + ' <small>LABUBU</small>';
     if(ms <= 0){ document.getElementById('farmTimer').textContent = 'Done!'; loadMe(); clearInterval(farmTimer); return; }
+    // Accrued since the last (partial) claim, capped at the 24h session total.
+    const accrued = Math.min(Math.floor(farmRate * 24), Math.floor(((Date.now() - lastClaimAt) / 3600000) * farmRate));
+    if(el) el.innerHTML = '+' + fmt(Math.max(0, accrued)) + ' <small>LABUBU</small>';
+    const claimBtn = document.getElementById('claimBtn');
+    if(claimBtn) claimBtn.style.display = accrued >= 1 ? 'block' : 'none';
     const h = Math.floor(ms/3600000), m = Math.floor(ms%3600000/60000), s = Math.floor(ms%60000/1000);
     document.getElementById('farmTimer').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   };

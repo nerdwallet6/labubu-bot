@@ -69,12 +69,33 @@ function createServer() {
       .get(req.tgUser.id);
     const active = db
       .prepare(
-        "SELECT * FROM farm_sessions WHERE user_id = ? AND claimed = 0 AND ends_at > ? ORDER BY started_at DESC LIMIT 1"
+        "SELECT * FROM farm_sessions WHERE user_id = ? AND claimed = 0 ORDER BY started_at DESC LIMIT 1"
       )
-      .get(req.tgUser.id, Date.now());
+      .get(req.tgUser.id);
     const pendingWithdraw = db
       .prepare("SELECT COUNT(*) AS c FROM withdrawals WHERE user_id = ? AND status = 'pending'")
       .get(req.tgUser.id).c;
+    // Accrued-but-unclaimed LABUBU for the active session (partial claims).
+    let activeSession = null;
+    if (active) {
+      const now = Date.now();
+      const lastClaim = active.last_claim_at || active.started_at;
+      const upTo = Math.min(now, active.ends_at);
+      const unclaimed = Math.max(
+        0,
+        Math.floor(((upTo - lastClaim) / 3_600_000) * active.rate_per_hour)
+      );
+      activeSession = {
+        id: active.id,
+        started_at: active.started_at,
+        ends_at: active.ends_at,
+        rate_per_hour: active.rate_per_hour,
+        last_claim_at: lastClaim,
+        unclaimed,
+        ended: now >= active.ends_at,
+        claimable: unclaimed > 0,
+      };
+    }
     res.json({
       ok: true,
       user: {
@@ -86,15 +107,7 @@ function createServer() {
         balance_nano: u.balance_nano,
       },
       referrals: { count: refs.c, earned: toLabubu(refs.e) },
-      activeSession: active
-        ? {
-            id: active.id,
-            started_at: active.started_at,
-            ends_at: active.ends_at,
-            rate_per_hour: active.rate_per_hour,
-            claimable: Date.now() >= active.ends_at,
-          }
-        : null,
+      activeSession,
       pendingWithdrawals: pendingWithdraw,
     });
   });
@@ -125,9 +138,9 @@ function createServer() {
     const now = Date.now();
     const info = db
       .prepare(
-        'INSERT INTO farm_sessions (user_id, started_at, ends_at, rate_per_hour) VALUES (?, ?, ?, ?)'
+        'INSERT INTO farm_sessions (user_id, started_at, ends_at, rate_per_hour, last_claim_at) VALUES (?, ?, ?, ?, ?)'
       )
-      .run(req.tgUser.id, now, now + config.farmDurationMs, lvl.perHour);
+      .run(req.tgUser.id, now, now + config.farmDurationMs, lvl.perHour, now);
     res.json({
       ok: true,
       session: {
@@ -141,6 +154,9 @@ function createServer() {
     });
   });
 
+  // Claim mined LABUBU ANYTIME (partial claims): pays what accrued since
+  // the last claim, capped at the session end (24h). The session keeps
+  // running until ends_at; claiming the remainder after it ends closes it.
   app.post('/api/farm/claim', requireUser, (req, res) => {
     const session = db
       .prepare(
@@ -148,20 +164,29 @@ function createServer() {
       )
       .get(req.tgUser.id);
     if (!session) return res.status(400).json({ ok: false, error: 'no active farming session' });
-    if (Date.now() < session.ends_at) {
-      return res.status(400).json({ ok: false, error: 'session has not ended yet', ends_at: session.ends_at });
+    const now = Date.now();
+    const lastClaim = session.last_claim_at || session.started_at;
+    const upTo = Math.min(now, session.ends_at);
+    const elapsedMs = upTo - lastClaim;
+    const finished = now >= session.ends_at;
+    // At least 1 whole LABUBU must have accrued (no dust claims), except
+    // when the session is finished — then the claim also closes it even
+    // for dust or 0, so a new session can start.
+    if (elapsedMs <= 0 && !finished) {
+      return res.status(400).json({ ok: false, error: 'nothing to claim yet' });
     }
-    const elapsedHours = (session.ends_at - session.started_at) / 3_600_000;
-    const maxHours = config.farmDurationMs / 3_600_000;
-    const hours = Math.min(Math.max(0, elapsedHours), maxHours);
-    const rewardNano = Math.floor(hours * session.rate_per_hour * NANO);
+    const rewardNano = elapsedMs > 0 ? Math.floor((elapsedMs / 3_600_000) * session.rate_per_hour * NANO) : 0;
+    if (rewardNano < NANO && !finished) {
+      return res.status(400).json({ ok: false, error: 'nothing to claim yet' });
+    }
     const user = getUser(req.tgUser.id);
     let referralNano = 0;
     runTransaction(() => {
       addBalance(req.tgUser.id, rewardNano);
       db.prepare(
-        'UPDATE farm_sessions SET claimed = 1, claimed_at = ?, reward_nano = ? WHERE id = ?'
-      ).run(Date.now(), rewardNano, session.id);
+        `UPDATE farm_sessions SET last_claim_at = ?, reward_nano = COALESCE(reward_nano, 0) + ?,
+         claimed = ?, claimed_at = ? WHERE id = ?`
+      ).run(upTo, rewardNano, finished ? 1 : 0, finished ? now : null, session.id);
       if (user.referrer_id) {
         referralNano = Math.floor(rewardNano * config.referralRate);
         if (referralNano > 0) {
@@ -176,6 +201,7 @@ function createServer() {
       ok: true,
       claimed: toLabubu(rewardNano),
       referralBonusToReferrer: toLabubu(referralNano),
+      sessionActive: !finished,
     });
   });
 
